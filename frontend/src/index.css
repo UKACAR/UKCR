@@ -1,18 +1,32 @@
 :root {
-  --bg: #f6f7f9;
+  --bg: #eef1f7;
   --surface: #ffffff;
-  --text: #1f2430;
-  --muted: #7a8294;
-  --border: #e6e8ee;
-  --accent: #1d9e75;
+  --text: #1b2030;
+  --muted: #6b7385;
+  --border: #d7dde9;
+  --border-strong: #c2cad9;
+
+  --accent: #16a085;
   --accent-2: #2f6feb;
-  --pos: #1d9e75;
-  --neg: #d8453a;
-  --buy-bg: #e6f4ee;
+
+  /* Bölüm vurgu renkleri */
+  --ac-blue: #2f6feb;
+  --ac-teal: #11a08a;
+  --ac-green: #1d9e75;
+  --ac-amber: #e0901e;
+  --ac-red: #e0533f;
+  --ac-purple: #7b5cf0;
+  --ac-slate: #64748b;
+
+  --pos: #15976a;
+  --neg: #dc4636;
+  --buy-bg: #e1f4ea;
   --buy-fg: #0f6e56;
-  --sell-bg: #fbeae8;
-  --sell-fg: #a3322a;
-  --radius: 12px;
+  --sell-bg: #fde9e4;
+  --sell-fg: #b23a28;
+
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(22, 32, 64, 0.05), 0 6px 18px rgba(22, 32, 64, 0.06);
   --sans: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -23,38 +37,52 @@
 body {
   margin: 0;
   font-family: var(--sans);
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 500px at 100% -10%, rgba(47, 111, 235, 0.06), transparent 60%),
+    radial-gradient(900px 400px at -10% 0%, rgba(17, 160, 138, 0.06), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-size: 14px;
   line-height: 1.45;
 }
 
 .app {
-  max-width: 1180px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px 48px;
+  padding: 28px 20px 56px;
 }
 
+/* Başlık */
 .app-header h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 32px;
+  font-weight: 800;
   letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--ac-blue) 0%, var(--ac-teal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .app-header .badge {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--buy-bg);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  background: linear-gradient(90deg, var(--ac-blue), var(--ac-teal));
+  border: none;
+  padding: 4px 10px;
   border-radius: 999px;
   vertical-align: middle;
+  box-shadow: 0 2px 6px rgba(47, 111, 235, 0.3);
 }
 
 .tagline {
-  margin: 4px 0 20px;
+  margin: 6px 0 22px;
   color: var(--muted);
+  font-size: 14px;
 }
 
 .grid {
@@ -73,59 +101,114 @@ body {
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
+/* Kartlar — kalın border + renkli sol şerit + gölge */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
+  border-left: 5px solid var(--card-accent, var(--accent-2));
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow);
 }
 
 .card h2 {
-  margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 14px;
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.card h2::before {
+  content: '';
+  width: 6px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--card-accent, var(--accent-2));
+}
+
+/* Bölüm vurgu renkleri (karta eklenir) */
+.ac-blue {
+  --card-accent: var(--ac-blue);
+}
+.ac-teal {
+  --card-accent: var(--ac-teal);
+}
+.ac-green {
+  --card-accent: var(--ac-green);
+}
+.ac-amber {
+  --card-accent: var(--ac-amber);
+}
+.ac-red {
+  --card-accent: var(--ac-red);
+}
+.ac-purple {
+  --card-accent: var(--ac-purple);
+}
+.ac-slate {
+  --card-accent: var(--ac-slate);
 }
 
 /* Inputs & buttons */
 .input,
 .btn {
   font: inherit;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-strong);
+  padding: 9px 11px;
   background: var(--surface);
   color: var(--text);
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
 }
 
 .input:focus {
   outline: none;
   border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(47, 111, 235, 0.15);
 }
 
 .btn {
-  background: var(--accent-2);
+  background: linear-gradient(180deg, #3b78ee, var(--accent-2));
   color: #fff;
   border-color: var(--accent-2);
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(47, 111, 235, 0.25);
 }
 
 .btn:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(47, 111, 235, 0.32);
+}
+
+.btn:active {
+  transform: translateY(0);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-ghost {
-  background: transparent;
+  background: var(--surface);
   color: var(--accent-2);
-  border-color: var(--border);
+  border: 1.5px solid var(--border-strong);
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent-2);
+  background: #f3f7ff;
 }
 
 .btn-icon {
@@ -134,10 +217,13 @@ body {
   color: var(--muted);
   cursor: pointer;
   font-size: 14px;
+  border-radius: 6px;
+  padding: 2px 6px;
 }
 
 .btn-icon:hover {
   color: var(--neg);
+  background: var(--sell-bg);
 }
 
 .row {
@@ -160,30 +246,39 @@ body {
   min-width: 120px;
 }
 
-/* Metric cards */
+/* Özet metrik kartları — renk-kodlu üst şerit */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
   gap: 12px;
 }
 
 .metric {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-top: 4px solid var(--metric-accent, var(--accent-2));
+  border-radius: 12px;
+  padding: 13px 15px;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.metric:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(22, 32, 64, 0.1);
 }
 
 .metric-label {
   font-size: 12px;
   color: var(--muted);
+  font-weight: 600;
 }
 
 .metric-value {
-  font-size: 19px;
-  font-weight: 700;
-  margin-top: 4px;
-  letter-spacing: -0.01em;
+  font-size: 21px;
+  font-weight: 800;
+  margin-top: 5px;
+  letter-spacing: -0.015em;
 }
 
 .pos {
@@ -221,7 +316,7 @@ body {
   }
 }
 
-/* Tables */
+/* Tablolar */
 .table-wrap {
   overflow-x: auto;
 }
@@ -235,15 +330,23 @@ table {
 th,
 td {
   text-align: left;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 
-th {
-  font-size: 12px;
+thead th {
+  font-size: 11.5px;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #f3f5fb;
+  border-bottom: 2px solid var(--border-strong);
+}
+
+tbody tr:hover {
+  background: #f7f9fd;
 }
 
 td.r,
@@ -253,8 +356,8 @@ th.r {
 
 .tag {
   font-size: 12px;
-  font-weight: 600;
-  padding: 2px 8px;
+  font-weight: 700;
+  padding: 2px 9px;
   border-radius: 999px;
 }
 
@@ -283,7 +386,7 @@ th.r {
   background: transparent;
   border: none;
   border-radius: 8px;
-  padding: 7px 8px;
+  padding: 8px;
   cursor: pointer;
   display: flex;
   gap: 10px;
@@ -291,16 +394,18 @@ th.r {
 }
 
 .result:hover {
-  background: var(--bg);
+  background: #eef3fb;
 }
 
 .result.active {
   background: var(--buy-bg);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .result .code {
   font-weight: 700;
   min-width: 42px;
+  color: var(--accent-2);
 }
 
 .result .title {
@@ -313,7 +418,7 @@ th.r {
 
 .fund-detail {
   margin-top: 14px;
-  border-top: 1px solid var(--border);
+  border-top: 2px dashed var(--border);
   padding-top: 14px;
 }
 
@@ -327,7 +432,7 @@ th.r {
 .kv {
   display: grid;
   grid-template-columns: auto 1fr auto 1fr;
-  gap: 4px 12px;
+  gap: 6px 12px;
   margin: 12px 0;
   font-size: 13px;
 }
@@ -345,11 +450,17 @@ th.r {
 .chip {
   font: inherit;
   font-size: 12px;
-  border: 1px solid var(--border);
+  font-weight: 600;
+  border: 1.5px solid var(--border-strong);
   background: var(--surface);
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: 4px 11px;
   cursor: pointer;
+  transition: all 0.1s;
+}
+
+.chip:hover {
+  border-color: var(--accent);
 }
 
 .chip.active {
@@ -374,7 +485,7 @@ th.r {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg);
+  background: #f3f5fb;
 }
 
 .chip.removable button {
@@ -392,8 +503,8 @@ th.r {
 
 .dot {
   display: inline-block;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   margin-right: 6px;
   vertical-align: baseline;
@@ -409,6 +520,7 @@ th.r {
 
 .chart-caption {
   margin: 12px 0 4px;
+  font-weight: 600;
 }
 
 /* Vade & Hatırlatmalar */
@@ -419,22 +531,25 @@ th.r {
   margin-bottom: 12px;
 }
 
-.reminder-list {
+.reminder-list,
+.alarm-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
-.reminder {
+.reminder,
+.alarm {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #fbfcfe;
 }
 
 .reminder.done {
@@ -454,32 +569,40 @@ th.r {
   font-size: 13px;
 }
 
-.reminder-title .code {
+.reminder-title .code,
+.alarm-main .code {
   color: var(--accent-2);
+  font-weight: 700;
   margin-right: 4px;
 }
 
 .days {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   color: var(--muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef1f7;
 }
 
 .days.warn {
-  color: #b8860b;
+  color: #9a6a08;
+  background: #fbeecb;
 }
 
 .days.neg {
-  color: var(--neg);
+  color: var(--sell-fg);
+  background: var(--sell-bg);
 }
 
 /* Valör editörü */
 .valor {
   margin: 12px 0;
-  padding: 10px;
-  background: var(--bg);
-  border-radius: 8px;
+  padding: 12px;
+  background: #f7f9fc;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
 }
 
 .valor-head {
@@ -491,17 +614,22 @@ th.r {
 .btn-ghost-sm {
   font: inherit;
   font-size: 12px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 8px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 3px 9px;
   cursor: pointer;
   color: var(--accent-2);
 }
 
+.btn-ghost-sm:hover {
+  border-color: var(--accent-2);
+}
+
 .settle {
   font-size: 13px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .valor-form {
@@ -518,6 +646,7 @@ th.r {
   gap: 3px;
   font-size: 12px;
   color: var(--muted);
+  font-weight: 600;
 }
 
 .valor-form .valor-note,
@@ -572,26 +701,8 @@ a.btn:hover {
   margin-bottom: 12px;
 }
 
-.alarm-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.alarm {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
 .alarm.inactive {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .alarm-main {
@@ -600,15 +711,10 @@ a.btn:hover {
   font-size: 13px;
 }
 
-.alarm-main .code {
-  color: var(--accent-2);
-  margin-right: 4px;
-}
-
 .status {
   font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
+  font-weight: 700;
+  padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
 }
@@ -616,6 +722,7 @@ a.btn:hover {
 .status.triggered {
   background: var(--sell-bg);
   color: var(--sell-fg);
+  box-shadow: 0 0 0 1px rgba(178, 58, 40, 0.2);
 }
 
 .status.waiting {
@@ -624,13 +731,15 @@ a.btn:hover {
 }
 
 .status.off {
-  background: #ececec;
+  background: #ececf0;
   color: var(--muted);
 }
 
 .app-footer {
-  margin-top: 28px;
+  margin-top: 32px;
   color: var(--muted);
   font-size: 12px;
   text-align: center;
+  border-top: 1.5px solid var(--border);
+  padding-top: 16px;
 }

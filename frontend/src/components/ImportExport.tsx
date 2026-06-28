@@ -25,7 +25,7 @@ export default function ImportExport({ portfolioId }: { portfolioId: number }) {
   }
 
   return (
-    <div className="card">
+    <div className="card ac-amber">
       <h2>İçe / Dışa Aktar</h2>
       <div className="ie-row">
         <a className="btn btn-ghost" href={exportTransactionsUrl(portfolioId)}>

@@ -34,7 +34,7 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
   }
 
   return (
-    <div className="card">
+    <div className="card ac-teal">
       <h2>Fon Keşfi</h2>
       <form className="row" onSubmit={submit}>
         <input

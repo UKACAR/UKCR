@@ -32,7 +32,7 @@ export default function Alarms() {
   }
 
   return (
-    <div className="card">
+    <div className="card ac-red">
       <h2>Fiyat Alarmları</h2>
 
       <form className="alarm-form" onSubmit={submit}>

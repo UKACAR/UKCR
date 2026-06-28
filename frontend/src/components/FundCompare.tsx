@@ -38,7 +38,7 @@ export default function FundCompare() {
   const remove = (c: string) => setCodes(codes.filter((x) => x !== c))
 
   return (
-    <div className="card">
+    <div className="card ac-purple">
       <h2>Fon Karşılaştırma</h2>
 
       <form className="row" onSubmit={addCode}>

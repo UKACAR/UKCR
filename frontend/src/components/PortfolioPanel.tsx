@@ -87,7 +87,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
 
   return (
     <div className="stack">
-      <div className="card">
+      <div className="card ac-blue">
         <div className="portfolio-bar">
           <select
             className="input"
@@ -118,7 +118,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
 
       {pid != null && <SummaryCards data={summaryQ.data} loading={summaryQ.isLoading} />}
 
-      <div className="card">
+      <div className="card ac-green">
         <h2>İşlem Ekle</h2>
         <form className="tx-form" onSubmit={submitTx}>
           <input
@@ -166,7 +166,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
         {addM.isError && <p className="error">İşlem eklenemedi (fon kodu/tarih kontrol edin).</p>}
       </div>
 
-      <div className="card">
+      <div className="card ac-teal">
         <h2>Pozisyonlar</h2>
         {summaryQ.data && summaryQ.data.positions.length > 0 ? (
           <div className="table-wrap">
@@ -207,7 +207,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
         )}
       </div>
 
-      <div className="card">
+      <div className="card ac-slate">
         <h2>İşlemler</h2>
         {txQ.data && txQ.data.length > 0 ? (
           <div className="table-wrap">
@@ -266,17 +266,23 @@ function SummaryCards({ data, loading }: { data?: Summary; loading: boolean }) {
   const plClass = data.total_pl >= 0 ? 'pos' : 'neg'
   return (
     <div className="cards">
-      <Metric label="Güncel Değer" value={tl(data.current_value)} />
-      <Metric label="Toplam K/Z" value={tl(data.total_pl)} cls={plClass} />
-      <Metric label="Kümülatif Getiri" value={pct(data.simple_return)} cls={plClass} />
-      <Metric label="XIRR (yıllık)" value={pct(data.xirr)} />
+      <Metric label="Güncel Değer" value={tl(data.current_value)} accent="var(--ac-blue)" />
+      <Metric label="Toplam K/Z" value={tl(data.total_pl)} cls={plClass} accent="var(--ac-green)" />
+      <Metric
+        label="Kümülatif Getiri"
+        value={pct(data.simple_return)}
+        cls={plClass}
+        accent="var(--ac-teal)"
+      />
+      <Metric label="XIRR (yıllık)" value={pct(data.xirr)} accent="var(--ac-purple)" />
       <Metric
         label="Reel Getiri"
         value={data.real_return == null ? 'EVDS gerekli' : pct(data.real_return)}
         muted={data.real_return == null}
+        accent="var(--ac-slate)"
       />
-      <Metric label="Tahmini Stopaj" value={tl(data.estimated_stopaj)} />
-      <Metric label="Net Değer (vergi −)" value={tl(data.net_value)} />
+      <Metric label="Tahmini Stopaj" value={tl(data.estimated_stopaj)} accent="var(--ac-amber)" />
+      <Metric label="Net Değer (vergi −)" value={tl(data.net_value)} accent="var(--ac-blue)" />
     </div>
   )
 }
@@ -286,14 +292,16 @@ function Metric({
   value,
   cls,
   muted,
+  accent,
 }: {
   label: string
   value: string
   cls?: string
   muted?: boolean
+  accent?: string
 }) {
   return (
-    <div className="metric">
+    <div className="metric" style={accent ? { borderTopColor: accent } : undefined}>
       <div className="metric-label">{label}</div>
       <div className={`metric-value ${cls ?? ''} ${muted ? 'muted' : ''}`}>{value}</div>
     </div>

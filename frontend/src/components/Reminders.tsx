@@ -40,7 +40,7 @@ export default function Reminders() {
   }
 
   return (
-    <div className="card">
+    <div className="card ac-amber">
       <h2>Vade &amp; Hatırlatmalar</h2>
 
       <form className="reminder-form" onSubmit={submit}>
