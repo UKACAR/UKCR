@@ -1,0 +1,154 @@
+export interface FundListItem {
+  code: string
+  title: string
+  kind: string
+  fund_type_desc?: string | null
+  risk?: number | null
+  status?: string | null
+  ret_1m?: number | null
+  ret_6m?: number | null
+  ret_ytd?: number | null
+  ret_1y?: number | null
+}
+
+export interface FundDetail extends FundListItem {
+  last_price?: number | null
+  last_date?: string | null
+  price_count: number
+  buy_valor_days?: number | null
+  sell_valor_days?: number | null
+  redemption_notice_days?: number | null
+  valor_note?: string | null
+  settlement_if_sold_today?: string | null
+}
+
+export interface ValorUpdate {
+  buy_valor_days?: number | null
+  sell_valor_days?: number | null
+  redemption_notice_days?: number | null
+  valor_note?: string | null
+}
+
+export interface Reminder {
+  id: number
+  title: string
+  date: string
+  code: string
+  kind: string
+  done: boolean
+}
+
+export interface ReminderCreate {
+  title: string
+  date: string
+  fund_code?: string | null
+  kind?: string
+}
+
+export interface ImportResult {
+  imported: number
+  errors: string[]
+}
+
+export interface Alarm {
+  id: number
+  code: string
+  title: string
+  kind: string // PRICE_ABOVE | PRICE_BELOW
+  threshold: number
+  active: boolean
+  note?: string | null
+  last_price?: number | null
+  triggered: boolean
+  triggered_at?: string | null
+}
+
+export interface AlarmCreate {
+  fund_code: string
+  kind: string
+  threshold: number
+  note?: string | null
+}
+
+export interface PricePoint {
+  date: string
+  price: number
+  category_rank?: number | null
+  category_total?: number | null
+}
+
+export interface Portfolio {
+  id: number
+  name: string
+}
+
+export interface Transaction {
+  id: number
+  instrument_id: number
+  code: string
+  type: 'BUY' | 'SELL'
+  quantity: number
+  price: number
+  trade_date: string
+  fee: number
+  note?: string | null
+}
+
+export interface TransactionCreate {
+  fund_code: string
+  type: 'BUY' | 'SELL'
+  quantity: number
+  price?: number | null
+  trade_date: string
+  fee?: number
+  note?: string | null
+}
+
+export interface Position {
+  code: string
+  title: string
+  units: number
+  avg_cost: number
+  last_price: number
+  last_date?: string | null
+  cost_basis: number
+  market_value: number
+  unrealized_pl: number
+  realized_pl: number
+  total_pl: number
+  estimated_stopaj: number
+}
+
+export interface CompareMetrics {
+  code: string
+  title: string
+  last_price?: number | null
+  last_date?: string | null
+  ret_1m?: number | null
+  ret_3m?: number | null
+  ret_6m?: number | null
+  ret_1y?: number | null
+  ret_ytd?: number | null
+  volatility?: number | null
+  max_drawdown?: number | null
+}
+
+export interface CompareResponse {
+  funds: CompareMetrics[]
+  chart: Record<string, number | string>[]
+}
+
+export interface Summary {
+  as_of: string
+  total_invested: number
+  current_value: number
+  unrealized_pl: number
+  realized_pl: number
+  total_pl: number
+  simple_return?: number | null
+  xirr?: number | null
+  estimated_stopaj: number
+  net_value: number
+  real_return?: number | null
+  positions: Position[]
+}

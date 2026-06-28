@@ -1,0 +1,11 @@
+# Fon Takip — backend bağımlılıkları (Faz 1)
+httpx>=0.27               # TEFAS/EVDS HTTP istemcisi
+sqlalchemy>=2.0          # ORM
+pydantic-settings>=2.0   # ayarlar / .env
+fastapi>=0.115           # REST API
+uvicorn[standard]>=0.30  # ASGI sunucu
+pyxirr>=0.10             # XIRR (para-ağırlıklı getiri)
+pandas>=2.2              # zaman serisi / hesap
+apscheduler>=3.10        # gecelik veri çekme job'u
+python-dateutil>=2.9
+python-multipart>=0.0.9  # FastAPI dosya yükleme (CSV import)
