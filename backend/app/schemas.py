@@ -62,6 +62,26 @@ class ImportResult(BaseModel):
     errors: list[str] = []
 
 
+class MarketItem(BaseModel):
+    label: str
+    value: float
+    change: float | None = None
+
+
+class MoverItem(BaseModel):
+    code: str
+    title: str
+    last_price: float
+    change: float
+
+
+class OverviewOut(BaseModel):
+    as_of: date | None = None
+    market: list[MarketItem] = []
+    gainers: list[MoverItem] = []
+    losers: list[MoverItem] = []
+
+
 class AlarmCreate(BaseModel):
     fund_code: str
     kind: str = Field(pattern="^(PRICE_ABOVE|PRICE_BELOW)$")

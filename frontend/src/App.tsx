@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import PortfolioPanel from './components/PortfolioPanel'
 import FundExplorer from './components/FundExplorer'
 import FundCompare from './components/FundCompare'
 import Reminders from './components/Reminders'
 import Alarms from './components/Alarms'
+import Overview from './components/Overview'
 
-type ViewId = 'portfolio' | 'explore' | 'compare' | 'reminders' | 'alarms'
+type ViewId = 'overview' | 'portfolio' | 'explore' | 'compare' | 'reminders' | 'alarms'
 
 const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
+  { id: 'overview', label: 'Günün Özeti', Icon: IconHome },
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
   { id: 'compare', label: 'Fon Karşılaştırma', Icon: IconCompare },
@@ -17,7 +19,7 @@ const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
 ]
 
 export default function App() {
-  const [view, setView] = useState<ViewId>('portfolio')
+  const [view, setView] = useState<ViewId>('overview')
   const [collapsed, setCollapsed] = useState(false)
   const [pickedCode, setPickedCode] = useState<string | undefined>(undefined)
 
@@ -59,11 +61,15 @@ export default function App() {
 
       <div className="content">
         <header className="app-header">
-          <h1>{current.label}</h1>
-          <p className="tagline">Sade &amp; etkin fon portföy takibi — XIRR, reel getiri, stopaj</p>
+          <div>
+            <h1>{current.label}</h1>
+            <p className="tagline">Sade &amp; etkin fon portföy takibi — XIRR, reel getiri, stopaj</p>
+          </div>
+          <Clock />
         </header>
 
         <main className="view">
+          {view === 'overview' && <Overview onGoPortfolio={() => setView('portfolio')} />}
           {view === 'portfolio' && <PortfolioPanel prefillCode={pickedCode} />}
           {view === 'explore' && (
             <FundExplorer
@@ -86,6 +92,28 @@ export default function App() {
   )
 }
 
+const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+const MONTHS = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+]
+
+function Clock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div className="clock">
+      <div className="clock-date">
+        {DAYS[now.getDay()]}, {now.getDate()} {MONTHS[now.getMonth()]}
+      </div>
+      <div className="clock-time">{now.toLocaleTimeString('tr-TR')}</div>
+    </div>
+  )
+}
+
 /* --- Basit çizgi ikonlar (currentColor) --- */
 const svg = {
   width: 20,
@@ -96,6 +124,17 @@ const svg = {
   strokeWidth: 1.8,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
+}
+
+function IconHome() {
+  return (
+    <svg {...svg}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
 }
 
 function IconPortfolio() {

@@ -70,6 +70,26 @@ export interface AlarmCreate {
   note?: string | null
 }
 
+export interface MarketItem {
+  label: string
+  value: number
+  change?: number | null
+}
+
+export interface MoverItem {
+  code: string
+  title: string
+  last_price: number
+  change: number
+}
+
+export interface Overview {
+  as_of?: string | null
+  market: MarketItem[]
+  gainers: MoverItem[]
+  losers: MoverItem[]
+}
+
 export interface PricePoint {
   date: string
   price: number

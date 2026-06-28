@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import alarms, compare, funds, portfolios, reminders
+from app.api import alarms, compare, funds, overview, portfolios, reminders
 from app.core.config import BACKEND_DIR, settings
 from app.db.init_db import init_db
 
@@ -52,6 +52,7 @@ app.include_router(portfolios.router)
 app.include_router(compare.router)
 app.include_router(reminders.router)
 app.include_router(alarms.router)
+app.include_router(overview.router)
 
 
 @app.get("/api/health", tags=["meta"])

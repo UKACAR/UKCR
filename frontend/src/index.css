@@ -219,6 +219,31 @@ body {
 }
 
 /* Başlık */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.clock {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.clock-date {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.clock-time {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 32px;
@@ -911,6 +936,78 @@ a.btn:hover {
 .status.off {
   background: #ececf0;
   color: var(--muted);
+}
+
+/* Günün Özeti */
+.ticker-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.ticker {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 15px;
+  box-shadow: var(--shadow);
+}
+
+.ticker-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ticker-value {
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 3px;
+  letter-spacing: -0.01em;
+}
+
+.ticker-change {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.overview-portfolio {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.overview-portfolio .big {
+  font-size: 21px;
+  font-weight: 800;
+  display: block;
+  margin-top: 2px;
+}
+
+.overview-portfolio .go-portfolio {
+  margin-left: auto;
+}
+
+.enler-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 820px) {
+  .enler-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rank {
+  display: inline-block;
+  min-width: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .app-footer {

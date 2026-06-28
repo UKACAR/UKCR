@@ -6,6 +6,7 @@ import type {
   FundDetail,
   FundListItem,
   ImportResult,
+  Overview,
   Portfolio,
   PricePoint,
   Reminder,
@@ -90,3 +91,5 @@ export const toggleAlarm = (id: number, active: boolean) =>
   http.patch<Alarm>(`/alarms/${id}`, null, { params: { active } }).then((r) => r.data)
 
 export const deleteAlarm = (id: number) => http.delete(`/alarms/${id}`).then((r) => r.data)
+
+export const getOverview = () => http.get<Overview>('/overview').then((r) => r.data)
