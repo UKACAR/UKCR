@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import settings
 
 _is_sqlite = settings.database_url.startswith("sqlite")
-_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+# timeout: eşzamanlı yazımlarda "database is locked" yerine 30 sn beklesin
+_connect_args = {"check_same_thread": False, "timeout": 30.0} if _is_sqlite else {}
 
 engine = create_engine(
     settings.database_url,
