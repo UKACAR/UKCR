@@ -33,6 +33,12 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
     setQuery(term.trim())
   }
 
+  const clearSearch = () => {
+    setTerm('')
+    setQuery('')
+    setCode(null)
+  }
+
   return (
     <div className="card ac-teal">
       <h2>Fon Keşfi</h2>
@@ -51,8 +57,15 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
       {resultsQ.isFetching && <p className="muted">Aranıyor…</p>}
       {resultsQ.data && resultsQ.data.length === 0 && <p className="muted">Sonuç yok.</p>}
       {resultsQ.data && resultsQ.data.length > 0 && (
-        <ul className="result-list">
-          {resultsQ.data.map((f) => (
+        <>
+          <div className="result-head">
+            <span className="muted small">{resultsQ.data.length} sonuç</span>
+            <button type="button" className="btn-ghost-sm" onClick={clearSearch}>
+              Temizle
+            </button>
+          </div>
+          <ul className="result-list">
+            {resultsQ.data.map((f) => (
             <li key={f.code}>
               <button
                 className={`result ${code === f.code ? 'active' : ''}`}
@@ -62,8 +75,9 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
                 <span className="title">{f.title}</span>
               </button>
             </li>
-          ))}
-        </ul>
+            ))}
+          </ul>
+        </>
       )}
 
       {code && (
@@ -73,11 +87,16 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
               <strong>{detailQ.data?.code ?? code}</strong>
               <div className="muted small">{detailQ.data?.title}</div>
             </div>
-            {onPick && (
-              <button className="btn btn-ghost" onClick={() => onPick(code)}>
-                İşleme ekle →
+            <div className="detail-actions">
+              {onPick && (
+                <button className="btn btn-ghost" onClick={() => onPick(code)}>
+                  İşleme ekle →
+                </button>
+              )}
+              <button className="btn-icon" title="Kapat" onClick={() => setCode(null)}>
+                ✕
               </button>
-            )}
+            </div>
           </div>
 
           <div className="kv">
