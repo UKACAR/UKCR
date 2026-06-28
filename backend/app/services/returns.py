@@ -20,8 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import TX_BUY, Instrument, Price, Transaction
 from app.db.session import SessionLocal
-from app.services import tax
-from app.services.evds import real_return
+from app.services import evds, tax
 from app.services.valuation import TxIn, build_positions, value_position
 
 _ZERO = Decimal("0")
@@ -151,7 +150,7 @@ def summarize(
     simple_return = float(total_pl / total_invested) if total_invested else None
     port_xirr = xirr(build_cashflows(txs, total_value, as_of))
     rreturn = (
-        real_return(simple_return, inflation)
+        evds.real_return(simple_return, inflation)
         if (simple_return is not None and inflation is not None)
         else None
     )
@@ -203,7 +202,16 @@ def portfolio_summary(db: Session, portfolio_id: int, *, as_of: date | None = No
         )
         if row:
             price_map[iid] = (row.date, row.price)
-    return summarize(txs, instruments, price_map, db=db, as_of=as_of)
+
+    if as_of is None:
+        price_dates = [d for d, _ in price_map.values()]
+        as_of = max(price_dates) if price_dates else date.today()
+    # Reel getiri: yatırım dönemindeki (ilk işlem -> bugün) TÜFE enflasyonu
+    inflation = None
+    if txs:
+        inflation = evds.period_inflation(min(t.trade_date for t in txs), as_of)
+
+    return summarize(txs, instruments, price_map, db=db, as_of=as_of, inflation=inflation)
 
 
 # --------------------------------------------------------------------------- #

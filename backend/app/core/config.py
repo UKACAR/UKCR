@@ -16,7 +16,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # .env'i çalışma dizininden bağımsız olarak backend/ altında ara
+    model_config = SettingsConfigDict(env_file=str(BACKEND_DIR / ".env"), extra="ignore")
 
     app_name: str = "UKCR API"
     debug: bool = True
