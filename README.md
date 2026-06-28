@@ -8,6 +8,19 @@ ve rakiplerde olmayan **vade/valör takibi**.
 > ⚠️ Bu yazılım yatırım veya vergi tavsiyesi vermez. Vergi/stopaj hesapları
 > tahminîdir. Veriler TEFAS'tan günlük NAV olarak alınır (anlık değildir).
 
+## Hızlı başlangıç (Windows)
+
+İlk kurulum (bir kez):
+```powershell
+cd frontend; npm install; npm run build        # arayüzü derle (dist/)
+cd ..\backend; python -m venv .venv; .\.venv\Scripts\python -m pip install -r requirements.txt
+```
+Sonra proje kökündeki **`baslat.bat`**'a çift tıkla → sunucu başlar ve tarayıcıda
+**http://localhost:8000** açılır. Durdurmak için `durdur.bat`.
+
+> Bu modda frontend backend tarafından servis edilir: **tek süreç, tek port**,
+> çalışma anında Node gerekmez. Geliştirme için ayrı dev sunucuları aşağıda.
+
 ## Özellikler
 
 **Portföy & getiri**
