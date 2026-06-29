@@ -713,6 +713,10 @@ th.r {
   vertical-align: baseline;
 }
 
+.clear-all {
+  margin-left: 6px;
+}
+
 .suggest-wrap {
   position: relative;
   flex: 1;

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -26,11 +26,32 @@ const PERIODS = [
   { label: '5Y', days: 1825 },
 ]
 
+const STORAGE_KEY = 'ukcr.compare.codes'
+
+function loadCodes(): string[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const arr = raw ? JSON.parse(raw) : []
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string').slice(0, 6) : []
+  } catch {
+    return []
+  }
+}
+
 export default function FundCompare() {
-  const [codes, setCodes] = useState<string[]>([])
+  const [codes, setCodes] = useState<string[]>(loadCodes)
   const [input, setInput] = useState('')
   const [period, setPeriod] = useState(365)
-  const [submitted, setSubmitted] = useState<string[]>([])
+  const [submitted, setSubmitted] = useState<string[]>(loadCodes)
+
+  // Karşılaştırma listesini tarayıcıda sakla (tekrar açınca gelsin)
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(codes))
+    } catch {
+      /* yoksay */
+    }
+  }, [codes])
 
   const q = useQuery({
     queryKey: ['compare', submitted, period],
@@ -55,7 +76,14 @@ export default function FundCompare() {
     e.preventDefault()
     addCode(input)
   }
-  const remove = (c: string) => setCodes(codes.filter((x) => x !== c))
+  const remove = (c: string) => {
+    setCodes(codes.filter((x) => x !== c))
+    setSubmitted((prev) => prev.filter((x) => x !== c))
+  }
+  const clearAll = () => {
+    setCodes([])
+    setSubmitted([])
+  }
 
   return (
     <div className="card ac-purple">
@@ -105,6 +133,9 @@ export default function FundCompare() {
               </button>
             </span>
           ))}
+          <button type="button" className="btn-ghost-sm clear-all" onClick={clearAll}>
+            Tümünü temizle
+          </button>
         </div>
       )}
 
