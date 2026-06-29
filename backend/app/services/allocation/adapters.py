@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import unicodedata
 
 import httpx
 
@@ -24,12 +25,20 @@ from .base import (
 )
 
 
-def slugify_tr(s: str) -> str:
-    s = s.strip().lower()
-    s = re.sub(r"\(.*?\)", "", s)  # parantez içini at
-    rep = {"ı": "i", "İ": "i", "ş": "s", "ğ": "g", "ç": "c", "ö": "o", "ü": "u", "â": "a"}
-    for a, b in rep.items():
+def slugify_tr(s: str, *, drop_paren: bool = True) -> str:
+    if drop_paren:
+        s = re.sub(r"\(.*?\)", "", s)       # parantez içini tamamen at (İş tarzı)
+    else:
+        s = s.replace("(", " ").replace(")", " ")  # paren içeriğini koru (Pusula tarzı)
+    # Türkçe büyük harfleri lower'DAN ÖNCE sadeleştir: "İ".lower() == "i̇"
+    # (birleşik nokta) olduğundan slug'da yanlış "-" oluşmasını önler.
+    pre = {"İ": "i", "I": "i", "Ş": "s", "Ğ": "g", "Ç": "c", "Ö": "o", "Ü": "u", "Â": "a"}
+    for a, b in pre.items():
         s = s.replace(a, b)
+    s = s.lower()
+    for a, b in {"ı": "i", "ş": "s", "ğ": "g", "ç": "c", "ö": "o", "ü": "u", "â": "a"}.items():
+        s = s.replace(a, b)
+    s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
     s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
     return s
 
@@ -140,27 +149,34 @@ class TeraPortfoy(Adapter):
     site = "https://www.teraportfoy.com"
     aliases = ("TERA PORTFÖY", "TERA PORTFOY")
 
+    # Not: Tera sunucusu bazı IP'lerden (ör. veri merkezi) TLS bağlantısını
+    # resetliyor; kullanıcının TR yerel IP'sinden genelde erişilebilir.
     def fetch(self, code, title, client):
-        # Tera bazen bağlantıyı resetliyor; birkaç kez dene.
-        for path in ("/fonlarimiz",):
-            for _ in range(2):
-                try:
-                    fl = client.get(self.site + path).text
-                    break
-                except Exception:  # noqa: BLE001
-                    fl = ""
-            links = re.findall(r'href="([^"]*yatirim-fonlari[^"]+)"', fl)
-            for l in links:
-                full = l if l.startswith("http") else self.site + l
-                try:
-                    h = client.get(full).text
-                except Exception:  # noqa: BLE001
-                    continue
-                if code.upper() in h.upper():
-                    items = pick_asset_allocation(h)
-                    if items:
-                        return AllocSnapshot(items=items, source=self.name,
-                                             source_url=full, as_of=find_date(h, "Dağılım"))
+        try:
+            fl = client.get(self.site + "/fonlarimiz").text
+        except Exception:  # noqa: BLE001
+            return None
+        links = []
+        seen = set()
+        for l in re.findall(r'href="([^"]*(?:yatirim-fonlari|/fon)[^"]+)"', fl):
+            full = l if l.startswith("http") else self.site + l
+            if full not in seen:
+                seen.add(full)
+                links.append(full)
+        # Başlık kelimeleriyle URL slug'ı en çok örtüşen ilk birkaç adayı dene
+        # (tüm fonları çekip siteyi yormamak ve API'yi kilitlememek için).
+        words = {w for w in slugify_tr(title).split("-") if len(w) > 3}
+        links.sort(key=lambda u: -sum(1 for w in words if w in u.lower()))
+        up = code.upper()
+        for full in links[:4]:
+            try:
+                h = client.get(full).text
+            except Exception:  # noqa: BLE001
+                continue
+            items = pick_asset_allocation(h)
+            if items and (up in h.upper() or len(items) >= 2):
+                return AllocSnapshot(items=items, source=self.name,
+                                     source_url=full, as_of=find_date(h, "Dağılım"))
         return None
 
 
@@ -170,8 +186,9 @@ class PusulaPortfoy(Adapter):
     aliases = ("PUSULA PORTFÖY", "PUSULA PORTFOY")
 
     def fetch(self, code, title, client):
-        slug = slugify_tr(title)
-        for u in (f"{self.site}/fonlar/{slug}",):
+        # Pusula slug'ı parantez içeriğini de tutar (…fonu-hisse-senedi-yogun-fon).
+        for slug in (slugify_tr(title, drop_paren=False), slugify_tr(title)):
+            u = f"{self.site}/fonlar/{slug}"
             try:
                 h = client.get(u).text
             except Exception:  # noqa: BLE001
@@ -179,7 +196,7 @@ class PusulaPortfoy(Adapter):
             items = pick_asset_allocation(h)
             if items:
                 return AllocSnapshot(items=items, source=self.name, source_url=u,
-                                     as_of=find_date(h, "Dağılım"))
+                                     as_of=find_date(h, "Portföy Dağılım"))
         return None
 
 

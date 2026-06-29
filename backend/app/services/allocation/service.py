@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,6 +13,13 @@ from app.ingestion import store
 from . import adapters, base
 
 _TOL = 0.5  # yüzde-puan; bu kadar oynamayı "değişim" sayma (günlük gürültüyü ele)
+_FRESH = timedelta(hours=12)  # son çekim bu kadar tazeyse tekrar çekme (UI hızlı kalsın)
+
+
+def _aware(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def _changed(old_items: list[dict], new_items: list[dict]) -> bool:
@@ -56,8 +63,17 @@ def get_allocation(db: Session, code: str, *, refresh: bool = True) -> dict:
     adapter = adapters.resolve(inst.title)
     kurucu = adapters.kurucu_key(inst.title)
 
+    # Tazelik: son çekim 12 saatten yeniyse tekrar çekme (özellikle yavaş
+    # siteler için UI'ı hızlı tut; veri zaten en çok günlük değişir).
+    existing_rows = _rows(db, inst.id)
+    fresh = bool(
+        existing_rows
+        and (_aware(existing_rows[0].fetched_at) or datetime.now(timezone.utc))
+        and datetime.now(timezone.utc) - _aware(existing_rows[0].fetched_at) < _FRESH
+    )
+
     # Canlı çek + değiştiyse sakla
-    if refresh and adapter is not None:
+    if refresh and adapter is not None and not fresh:
         snap = None
         try:
             with base.make_client() as client:
