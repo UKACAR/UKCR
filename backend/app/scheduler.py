@@ -3,12 +3,13 @@
 Kullanım:
   - Uygulama içi: settings.enable_scheduler=True ise FastAPI açılışında başlar.
   - Bağımsız:
-        python -m app.scheduler once         # bir kez çalıştır (tutulan fonlar)
-        python -m app.scheduler once --all    # bir kez, TÜM fonlar
-        python -m app.scheduler start         # zamanlayıcıyı blocking çalıştır
+        python -m app.scheduler once           # tam güncelleme (tüm fonlar)
+        python -m app.scheduler once --tracked  # sadece tutulan fonlar (hızlı)
+        python -m app.scheduler start           # zamanlayıcıyı blocking çalıştır
 
-İş: fon listesini/getirilerini tazeler ve (varsayılan) portföylerde TUTULAN
-fonların NAV'larını günceller. TEFAS NAV'ları akşam yayınlar; varsayılan 20:00.
+İş: fon evrenlerini (YAT/EMK/BYF) tazeler, fonların NAV'larını günceller ve
+piyasa (Yahoo) cache'ini ısıtır. Her tür hataya dayanıklı (biri başarısız olsa
+da diğerleri devam eder). TEFAS NAV'ları akşam yayınlar; varsayılan saat 20:00.
 Üretimde Celery/RQ + Redis'e taşınabilir.
 """
 
@@ -22,13 +23,25 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.db.models import Instrument, Transaction
 from app.db.session import SessionLocal
-from app.ingestion import store
+from app.ingestion import store, tefas
+from app.services import market
+
+_TEFAS_KINDS = ("YAT", "EMK", "BYF")
 
 
-def run_daily_update(*, only_tracked: bool = True) -> dict:
-    """Fon metadatasını tazeler + (tutulan/tüm) fonların NAV'larını günceller."""
+def run_daily_update(*, only_tracked: bool = False) -> dict:
+    """Fon evrenleri + NAV'lar + piyasa cache'ini günceller."""
+    funds: dict[str, object] = {}
     with SessionLocal() as db:
-        funds_n = store.upsert_funds(db, "YAT")
+        # 1) Fon evrenlerini tazele (her tür hataya dayanıklı; EMK ara sıra timeout verir)
+        with tefas.build_client(timeout=60.0) as client:
+            for kind in _TEFAS_KINDS:
+                try:
+                    funds[kind] = store.upsert_funds(db, kind, client=client)
+                except Exception as e:  # noqa: BLE001
+                    funds[kind] = f"hata: {type(e).__name__}"
+
+        # 2) NAV güncelle (tüm fonlar ya da sadece tutulanlar)
         if only_tracked:
             ids = [i for (i,) in db.execute(select(Transaction.instrument_id).distinct()).all()]
             codes = (
@@ -41,13 +54,20 @@ def run_daily_update(*, only_tracked: bool = True) -> dict:
 
         rows = 0
         if codes:
-            with store.tefas.build_client() as client:
+            with tefas.build_client() as client:
                 for code in codes:
                     try:
                         rows += store.ingest_prices(db, code, 1, client=client)
-                    except Exception:  # noqa: BLE001  (tek fon hatası job'u düşürmesin)
+                    except Exception:  # noqa: BLE001
                         pass
-        return {"funds_refreshed": funds_n, "price_codes": len(codes), "price_rows": rows}
+
+    # 3) Piyasa (Yahoo) cache'ini ısıt
+    try:
+        market.snapshot()
+    except Exception:  # noqa: BLE001
+        pass
+
+    return {"funds": funds, "price_codes": len(codes), "price_rows": rows}
 
 
 def _job() -> None:
@@ -76,8 +96,9 @@ def _main(argv: list[str]) -> int:
 
     cmd = argv[1] if len(argv) > 1 else "once"
     if cmd == "once":
-        res = run_daily_update(only_tracked="--all" not in argv)
-        print(f"Güncelleme tamam: {res}")
+        only = "--tracked" in argv
+        print(f"Güncelleme başladı (only_tracked={only})...", flush=True)
+        print(run_daily_update(only_tracked=only))
     elif cmd == "start":
         from apscheduler.schedulers.blocking import BlockingScheduler
 
@@ -89,7 +110,7 @@ def _main(argv: list[str]) -> int:
         except (KeyboardInterrupt, SystemExit):
             pass
     else:
-        print("Kullanım: python -m app.scheduler [once|once --all|start]")
+        print("Kullanım: python -m app.scheduler [once|once --tracked|start]")
         return 2
     return 0
 
