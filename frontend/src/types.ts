@@ -12,9 +12,15 @@ export interface FundListItem {
 }
 
 export interface FundDetail extends FundListItem {
+  ret_3m?: number | null
+  ret_3y?: number | null
+  ret_5y?: number | null
+  currency?: string
   last_price?: number | null
   last_date?: string | null
   price_count: number
+  category_rank?: number | null
+  category_total?: number | null
   buy_valor_days?: number | null
   sell_valor_days?: number | null
   redemption_notice_days?: number | null

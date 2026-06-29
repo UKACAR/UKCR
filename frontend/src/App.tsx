@@ -31,6 +31,13 @@ export default function App() {
   const [view, setView] = useState<ViewId>('overview')
   const [collapsed, setCollapsed] = useState(false)
   const [pickedCode, setPickedCode] = useState<string | undefined>(undefined)
+  const [openTarget, setOpenTarget] = useState<{ code: string; n: number } | undefined>(undefined)
+
+  // Başka ekrandan bir fona tıklanınca Fon Keşfi'nde o fonun detayını aç.
+  const openFund = (code: string) => {
+    setOpenTarget((p) => ({ code, n: (p?.n ?? 0) + 1 }))
+    setView('explore')
+  }
 
   const current = NAV.find((n) => n.id === view) ?? NAV[0]
 
@@ -54,7 +61,10 @@ export default function App() {
             <button
               key={item.id}
               className={`nav-item ${view === item.id ? 'active' : ''}`}
-              onClick={() => setView(item.id)}
+              onClick={() => {
+                setOpenTarget(undefined) // menüden gelince Fon Keşfi temiz açılsın
+                setView(item.id)
+              }}
               title={item.label}
             >
               <span className="nav-icon">
@@ -78,18 +88,21 @@ export default function App() {
         </header>
 
         <main className="view">
-          {view === 'overview' && <Overview onGoPortfolio={() => setView('portfolio')} />}
-          {view === 'favorites' && <Favorites />}
+          {view === 'overview' && (
+            <Overview onGoPortfolio={() => setView('portfolio')} onOpenFund={openFund} />
+          )}
+          {view === 'favorites' && <Favorites onOpenFund={openFund} />}
           {view === 'portfolio' && <PortfolioPanel prefillCode={pickedCode} />}
           {view === 'explore' && (
             <FundExplorer
+              openTarget={openTarget}
               onPick={(c) => {
                 setPickedCode(c)
                 setView('portfolio')
               }}
             />
           )}
-          {view === 'compare' && <FundCompare />}
+          {view === 'compare' && <FundCompare onOpenFund={openFund} />}
           {view === 'reminders' && <Reminders />}
           {view === 'alarms' && <Alarms />}
         </main>

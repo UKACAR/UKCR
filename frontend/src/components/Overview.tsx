@@ -26,7 +26,7 @@ const RANGES = [
   { id: '1y', label: '1Y' },
 ]
 
-function MoversTable({ items }: { items: MoverItem[] }) {
+function MoversTable({ items, onOpen }: { items: MoverItem[]; onOpen?: (code: string) => void }) {
   if (items.length === 0) return <p className="muted small">Veri yok.</p>
   return (
     <div className="table-wrap">
@@ -42,7 +42,14 @@ function MoversTable({ items }: { items: MoverItem[] }) {
           {items.map((m, i) => (
             <tr key={m.code}>
               <td>
-                <span className="rank">{i + 1}</span> <b>{m.code}</b>
+                <span className="rank">{i + 1}</span>{' '}
+                {onOpen ? (
+                  <button type="button" className="link-code" onClick={() => onOpen(m.code)}>
+                    {m.code}
+                  </button>
+                ) : (
+                  <b>{m.code}</b>
+                )}
                 <div className="muted small">{m.title}</div>
               </td>
               <td className="r">{num(m.last_price, 4)}</td>
@@ -55,7 +62,13 @@ function MoversTable({ items }: { items: MoverItem[] }) {
   )
 }
 
-export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void }) {
+export default function Overview({
+  onGoPortfolio,
+  onOpenFund,
+}: {
+  onGoPortfolio?: () => void
+  onOpenFund?: (code: string) => void
+}) {
   const [kind, setKind] = useState('FON')
   const [range, setRange] = useState('1mo')
 
@@ -241,11 +254,11 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
             <div className="enler-grid">
               <div>
                 <div className="enler-title pos">▲ Kazananlar</div>
-                <MoversTable items={moversQ.data?.gainers ?? []} />
+                <MoversTable items={moversQ.data?.gainers ?? []} onOpen={onOpenFund} />
               </div>
               <div>
                 <div className="enler-title neg">▼ Kaybedenler</div>
-                <MoversTable items={moversQ.data?.losers ?? []} />
+                <MoversTable items={moversQ.data?.losers ?? []} onOpen={onOpenFund} />
               </div>
             </div>
             {moversQ.data?.as_of && (

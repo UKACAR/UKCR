@@ -9,7 +9,7 @@ type FavType = 'FUND' | 'STOCK'
 
 const cls = (v?: number | null) => (v == null ? '' : v >= 0 ? 'pos' : 'neg')
 
-export default function Favorites() {
+export default function Favorites({ onOpenFund }: { onOpenFund?: (code: string) => void }) {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['favorites'], queryFn: listFavorites })
 
@@ -135,6 +135,7 @@ export default function Favorites() {
               rows={funds}
               priceFmt={(v) => num(v, 4)}
               onDelete={(id) => delM.mutate(id)}
+              onOpen={onOpenFund}
             />
           )}
           {stocks.length > 0 && (
@@ -156,11 +157,13 @@ function FavGroup({
   rows,
   priceFmt,
   onDelete,
+  onOpen,
 }: {
   title: string
   rows: import('../types').Favorite[]
   priceFmt: (v: number | null | undefined) => string
   onDelete: (id: number) => void
+  onOpen?: (code: string) => void
 }) {
   return (
     <div className="fav-group">
@@ -168,10 +171,22 @@ function FavGroup({
       <ul className="fav-list">
         {rows.map((f) => (
           <li key={f.id} className="fav">
-            <div className="fav-main">
-              <b className="code">{f.code}</b>
-              <span className="muted small fav-title">{f.title}</span>
-            </div>
+            {onOpen ? (
+              <button
+                type="button"
+                className="fav-main fav-open"
+                title="Fon detayını aç"
+                onClick={() => onOpen(f.code)}
+              >
+                <b className="code">{f.code}</b>
+                <span className="muted small fav-title">{f.title}</span>
+              </button>
+            ) : (
+              <div className="fav-main">
+                <b className="code">{f.code}</b>
+                <span className="muted small fav-title">{f.title}</span>
+              </div>
+            )}
             <div className="fav-price">
               <div className="fav-last">{priceFmt(f.last_price)}</div>
               <div className={`fav-chg ${cls(f.change)}`}>{pct(f.change)}</div>

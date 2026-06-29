@@ -22,9 +22,16 @@ class FundListItem(BaseModel):
 
 
 class FundDetail(FundListItem):
+    # Ek dönem getirileri (FundListItem'da 1m/6m/ytd/1y var)
+    ret_3m: float | None = None
+    ret_3y: float | None = None
+    ret_5y: float | None = None
+    currency: str = "TRY"
     last_price: float | None = None
     last_date: date | None = None
     price_count: int = 0
+    category_rank: int | None = None    # kategori içindeki sıra (kategoriDerece)
+    category_total: int | None = None   # kategorideki toplam fon (kategoriFonSay)
     # Vade/valör
     buy_valor_days: int | None = None
     sell_valor_days: int | None = None

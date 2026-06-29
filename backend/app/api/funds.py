@@ -55,6 +55,8 @@ def _fund_detail_payload(db: Session, inst: Instrument) -> FundDetail:
     if last:
         out.last_price = float(last.price)
         out.last_date = last.date
+        out.category_rank = last.category_rank
+        out.category_total = last.category_total
     out.price_count = count
     if inst.sell_valor_days is not None:
         out.settlement_if_sold_today = valor.settlement_date(

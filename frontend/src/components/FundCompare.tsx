@@ -38,7 +38,7 @@ function loadCodes(): string[] {
   }
 }
 
-export default function FundCompare() {
+export default function FundCompare({ onOpenFund }: { onOpenFund?: (code: string) => void }) {
   const [codes, setCodes] = useState<string[]>(loadCodes)
   const [input, setInput] = useState('')
   const [period, setPeriod] = useState(365)
@@ -182,7 +182,13 @@ export default function FundCompare() {
                   <tr key={f.code}>
                     <td>
                       <span className="dot" style={{ background: COLORS[i % COLORS.length] }} />
-                      <b>{f.code}</b>
+                      {onOpenFund ? (
+                        <button type="button" className="link-code" onClick={() => onOpenFund(f.code)}>
+                          {f.code}
+                        </button>
+                      ) : (
+                        <b>{f.code}</b>
+                      )}
                       <div className="muted small">{f.title}</div>
                     </td>
                     <td className="r">{num(f.last_price, 4)}</td>

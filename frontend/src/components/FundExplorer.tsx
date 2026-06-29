@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getFund, getFundPrices, searchFunds } from '../api'
@@ -7,11 +7,31 @@ import NavChart from './NavChart'
 import ValorEditor from './ValorEditor'
 import FundAllocation from './FundAllocation'
 
-export default function FundExplorer({ onPick }: { onPick?: (code: string) => void }) {
+const RETURNS: [string, 'ret_1m' | 'ret_3m' | 'ret_6m' | 'ret_ytd' | 'ret_1y' | 'ret_3y' | 'ret_5y'][] = [
+  ['1A', 'ret_1m'], ['3A', 'ret_3m'], ['6A', 'ret_6m'], ['YBB', 'ret_ytd'],
+  ['1Y', 'ret_1y'], ['3Y', 'ret_3y'], ['5Y', 'ret_5y'],
+]
+
+export default function FundExplorer({
+  onPick,
+  openTarget,
+}: {
+  onPick?: (code: string) => void
+  openTarget?: { code: string; n: number }
+}) {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [code, setCode] = useState<string | null>(null)
   const [period, setPeriod] = useState(12)
+
+  // Başka ekrandan bir fon açıldığında (Favorilerim/Enler/Karşılaştırma) onu seç.
+  useEffect(() => {
+    if (openTarget?.code) {
+      setCode(openTarget.code)
+      setTerm('')
+      setQuery('')
+    }
+  }, [openTarget])
 
   const resultsQ = useQuery({
     queryKey: ['funds', query],
@@ -101,14 +121,55 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
           </div>
 
           <div className="kv">
+            <span>Fon türü</span>
+            <b>{detailQ.data?.fund_type_desc ?? '—'}</b>
+            <span>Kategori</span>
+            <b>{detailQ.data?.kind ?? '—'}</b>
+            <span>Risk değeri</span>
+            <b>{detailQ.data?.risk != null ? `${detailQ.data.risk} / 7` : '—'}</b>
+            <span>TEFAS durumu</span>
+            <b>
+              {detailQ.data?.status == null
+                ? '—'
+                : detailQ.data.status === '1'
+                  ? 'İşleme açık'
+                  : detailQ.data.status === '0'
+                    ? 'İşleme kapalı'
+                    : detailQ.data.status}
+            </b>
             <span>Son NAV</span>
-            <b>{num(detailQ.data?.last_price, 6)}</b>
+            <b>
+              {num(detailQ.data?.last_price, 6)}
+              {detailQ.data?.last_price != null
+                ? detailQ.data?.currency && detailQ.data.currency !== 'TRY'
+                  ? ` ${detailQ.data.currency}`
+                  : ' ₺'
+                : ''}
+            </b>
             <span>Son tarih</span>
             <b>{detailQ.data?.last_date ?? '—'}</b>
-            <span>1Y getiri</span>
-            <b>{pctRaw(detailQ.data?.ret_1y)}</b>
+            <span>Kategori sırası</span>
+            <b>
+              {detailQ.data?.category_rank != null
+                ? `${detailQ.data.category_rank} / ${detailQ.data.category_total ?? '—'}`
+                : '—'}
+            </b>
             <span>Kayıt</span>
             <b>{detailQ.data?.price_count ?? '—'}</b>
+          </div>
+
+          <div className="ret-strip">
+            {RETURNS.map(([lbl, key]) => {
+              const v = detailQ.data?.[key]
+              return (
+                <div className="ret-cell" key={lbl}>
+                  <span className="ret-lbl">{lbl}</span>
+                  <span className={`ret-val ${v == null ? '' : v >= 0 ? 'pos' : 'neg'}`}>
+                    {pctRaw(v)}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           <ValorEditor code={code} detail={detailQ.data} />
