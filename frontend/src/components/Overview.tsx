@@ -59,10 +59,32 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
   const [kind, setKind] = useState('FON')
   const [range, setRange] = useState('1mo')
 
-  const overviewQ = useQuery({ queryKey: ['overview'], queryFn: getOverview })
-  const indexQ = useQuery({ queryKey: ['index', range], queryFn: () => getIndexChart('XU100.IS', range) })
-  const newsQ = useQuery({ queryKey: ['news'], queryFn: getNews })
-  const moversQ = useQuery({ queryKey: ['movers', kind], queryFn: () => getMovers(kind) })
+  // Piyasa şeridi ve enler açıkken kendiliğinden tazelensin (veri ~15 dk gecikmeli).
+  // refetchIntervalInBackground: sekme arka planda olsa bile tazelensin.
+  // Ticker'ı sunucu cache'inden (60sn) daha sık yokla ki taze değer gecikmeden
+  // gelsin (eşit periyot faz kayması ~120sn gecikme yaratırdı).
+  const overviewQ = useQuery({
+    queryKey: ['overview'],
+    queryFn: getOverview,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+  const indexQ = useQuery({
+    queryKey: ['index', range],
+    queryFn: () => getIndexChart('XU100.IS', range),
+    refetchInterval: 300_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+  const newsQ = useQuery({ queryKey: ['news'], queryFn: getNews, refetchInterval: 600_000 })
+  const moversQ = useQuery({
+    queryKey: ['movers', kind],
+    queryFn: () => getMovers(kind),
+    refetchInterval: 300_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
   const portfoliosQ = useQuery({ queryKey: ['portfolios'], queryFn: listPortfolios })
   const pid = portfoliosQ.data?.[0]?.id
   const summaryQ = useQuery({
@@ -72,9 +94,17 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
   })
 
   const pts = indexQ.data ?? []
-  const bistLast = pts.length ? pts[pts.length - 1].close : null
   const bistFirst = pts.length ? pts[0].close : null
-  const bistChg = bistLast && bistFirst ? bistLast / bistFirst - 1 : null
+  const bistChartLast = pts.length ? pts[pts.length - 1].close : null
+  // Başlık: güncel BİST 100 değeri ve GÜNLÜK değişim (piyasa şeridiyle aynı kaynak,
+  // diğer sitelerle uyumlu). Grafik dizisinin uçlarından hesaplanan oran ise
+  // seçili DÖNEM getirisidir; ayrı ve etiketli gösteriyoruz (karışmasın diye).
+  const bistMarket = overviewQ.data?.market.find((m) => m.label === 'BİST 100')
+  const bistVal = bistMarket?.value ?? bistChartLast
+  const bistDailyChg = bistMarket?.change ?? null
+  const periodReturn =
+    bistChartLast != null && bistFirst != null ? bistChartLast / bistFirst - 1 : null
+  const rangeLabel = RANGES.find((r) => r.id === range)?.label ?? ''
 
   return (
     <div className="stack">
@@ -99,9 +129,11 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
         <div className="enler-head">
           <h2>
             BİST 100{' '}
-            {bistLast != null && <span className="bist-val">{num(bistLast, 2)}</span>}{' '}
-            {bistChg != null && (
-              <span className={`bist-chg ${bistChg >= 0 ? 'pos' : 'neg'}`}>{pct(bistChg)}</span>
+            {bistVal != null && <span className="bist-val">{num(bistVal, 2)}</span>}{' '}
+            {bistDailyChg != null && (
+              <span className={`bist-chg ${bistDailyChg >= 0 ? 'pos' : 'neg'}`}>
+                {pct(bistDailyChg)}
+              </span>
             )}
           </h2>
           <div className="period-row">
@@ -143,6 +175,13 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
               <Line type="monotone" dataKey="close" stroke="var(--accent)" dot={false} strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
+        )}
+        {periodReturn != null && (
+          <p className="muted small chart-caption">
+            Seçili dönem ({rangeLabel}) getirisi:{' '}
+            <span className={periodReturn >= 0 ? 'pos' : 'neg'}>{pct(periodReturn)}</span> · günlük
+            değişim başlıkta
+          </p>
         )}
       </div>
 

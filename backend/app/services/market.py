@@ -19,7 +19,8 @@ _UA = {
 }
 _BASE = "https://query1.finance.yahoo.com/v8/finance/chart/"
 _GRAM = 31.1035  # bir ons = 31.1035 gram
-_TTL = 600  # 10 dk cache
+_TTL = 600  # 10 dk cache (grafik — günlük mumlar)
+_LIVE_TTL = 60  # 1 dk cache (canlı ticker/kotasyon — sık güncellensin)
 
 _snap_cache: dict = {"at": 0.0, "items": []}
 _chart_cache: dict[str, dict] = {}
@@ -27,26 +28,58 @@ _quote_cache: dict[str, dict] = {}
 
 
 def _quote(client: httpx.Client, symbol: str) -> tuple[float, float | None] | None:
+    """(son fiyat, ÖNCEKİ GÜN kapanışı) döndürür — günlük değişim için.
+
+    Not: Yahoo bazı sembollerde (BİST endeksleri, döviz, vadeli) meta'da
+    `previousClose` döndürmez; `chartPreviousClose` ise seçilen aralığın (ör.
+    5 gün) BAŞINDAN önceki kapanıştır — yani çok günlük, günlük değil. Bu yüzden
+    önceki kapanışı günlük mum dizisinin sondan bir önceki geçerli değerinden
+    alıyoruz (gerçek "dün vs bugün" değişimi).
+    """
     try:
-        r = client.get(_BASE + symbol, params={"interval": "1d", "range": "5d"})
+        r = client.get(_BASE + symbol, params={"interval": "1d", "range": "7d"})
         res = (r.json().get("chart") or {}).get("result")
         if not res:
             return None
-        m = res[0]["meta"]
-        price = m.get("regularMarketPrice")
-        prev = m.get("previousClose") or m.get("chartPreviousClose")
+        result = res[0]
+        m = result.get("meta") or {}
+        closes = (result.get("indicators", {}).get("quote") or [{}])[0].get("close") or []
+        valid = [float(c) for c in closes if c is not None]
+
+        rmp = m.get("regularMarketPrice")
+        price = float(rmp) if rmp is not None else (valid[-1] if valid else None)
         if price is None:
             return None
-        return float(price), (float(prev) if prev else None)
+
+        # 1) Otoriter meta varsa onu kullan (bu uçta genelde gelmez).
+        prev = m.get("previousClose")
+        if prev is None:
+            prev = m.get("regularMarketPreviousClose")
+
+        # 2) Yoksa günlük mumdan çıkar. ÖNEMLİ: Yahoo, piyasa açık/kapalı fark
+        #    etmeksizin BUGÜNÜN barını regularMarketPrice ile AYNI kapanışla
+        #    içerir. Son barın kapanışı rmp'ye eşit DEĞİLSE bugünün barı henüz
+        #    oluşmamış demektir ve son bar zaten önceki kapanıştır — aksi halde
+        #    valid[-2]'yi alıp 2 GÜNLÜK değişim hesaplardık (düzeltmenin önlediği
+        #    asıl hata; özellikle erken seansta ve ~24s işlem gören vadelilerde).
+        if prev is None and valid:
+            last_close = valid[-1]
+            today_bar = abs(last_close - price) <= max(abs(price), 1.0) * 1e-4
+            if today_bar:
+                prev = valid[-2] if len(valid) >= 2 else None
+            else:
+                prev = last_close
+
+        return price, (float(prev) if prev is not None else None)
     except Exception:  # noqa: BLE001
         return None
 
 
 def quote_one(symbol: str) -> tuple[float, float | None] | None:
-    """Tek bir sembol için (fiyat, önceki kapanış) — 10 dk cache'li."""
+    """Tek bir sembol için (fiyat, önceki gün kapanışı) — ~1 dk (canlı) cache'li."""
     now = time.time()
     c = _quote_cache.get(symbol)
-    if c and now - c["at"] < _TTL:
+    if c and now - c["at"] < _LIVE_TTL:
         return c["q"]
     try:
         with httpx.Client(timeout=12.0, headers=_UA) as client:
@@ -60,7 +93,7 @@ def quote_one(symbol: str) -> tuple[float, float | None] | None:
 
 def snapshot() -> list[dict]:
     now = time.time()
-    if _snap_cache["items"] and now - _snap_cache["at"] < _TTL:
+    if _snap_cache["items"] and now - _snap_cache["at"] < _LIVE_TTL:
         return _snap_cache["items"]
     items = _fetch_snapshot()
     if items:
