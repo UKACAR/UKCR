@@ -3,6 +3,8 @@ import type {
   Alarm,
   AlarmCreate,
   CompareResponse,
+  Favorite,
+  FavoriteCreate,
   FundDetail,
   FundListItem,
   ImportResult,
@@ -94,6 +96,14 @@ export const toggleAlarm = (id: number, active: boolean) =>
   http.patch<Alarm>(`/alarms/${id}`, null, { params: { active } }).then((r) => r.data)
 
 export const deleteAlarm = (id: number) => http.delete(`/alarms/${id}`).then((r) => r.data)
+
+export const listFavorites = () => http.get<Favorite[]>('/favorites').then((r) => r.data)
+
+export const addFavorite = (body: FavoriteCreate) =>
+  http.post<Favorite>('/favorites', body).then((r) => r.data)
+
+export const deleteFavorite = (id: number) =>
+  http.delete(`/favorites/${id}`).then((r) => r.data)
 
 export const getOverview = () => http.get<Overview>('/overview').then((r) => r.data)
 

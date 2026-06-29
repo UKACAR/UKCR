@@ -3,14 +3,23 @@ import type { ComponentType } from 'react'
 import PortfolioPanel from './components/PortfolioPanel'
 import FundExplorer from './components/FundExplorer'
 import FundCompare from './components/FundCompare'
+import Favorites from './components/Favorites'
 import Reminders from './components/Reminders'
 import Alarms from './components/Alarms'
 import Overview from './components/Overview'
 
-type ViewId = 'overview' | 'portfolio' | 'explore' | 'compare' | 'reminders' | 'alarms'
+type ViewId =
+  | 'overview'
+  | 'favorites'
+  | 'portfolio'
+  | 'explore'
+  | 'compare'
+  | 'reminders'
+  | 'alarms'
 
 const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'overview', label: 'Günün Özeti', Icon: IconHome },
+  { id: 'favorites', label: 'Favorilerim', Icon: IconStar },
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
   { id: 'compare', label: 'Fon Karşılaştırma', Icon: IconCompare },
@@ -70,6 +79,7 @@ export default function App() {
 
         <main className="view">
           {view === 'overview' && <Overview onGoPortfolio={() => setView('portfolio')} />}
+          {view === 'favorites' && <Favorites />}
           {view === 'portfolio' && <PortfolioPanel prefillCode={pickedCode} />}
           {view === 'explore' && (
             <FundExplorer
@@ -133,6 +143,14 @@ function IconHome() {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
+}
+
+function IconStar() {
+  return (
+    <svg {...svg}>
+      <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 17.1l-5.25 2.6 1-5.85L3.5 9.65l5.9-.85L12 3.5z" />
     </svg>
   )
 }

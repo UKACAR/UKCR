@@ -25,6 +25,9 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 
+# Loglar (yerel çalıştırma)
+*.log
+
 # Editör / OS
 .vscode/
 .idea/

@@ -119,6 +119,22 @@ class AlarmOut(BaseModel):
     triggered_at: datetime | None = None
 
 
+class FavoriteCreate(BaseModel):
+    type: str = Field(pattern="^(FUND|STOCK)$")
+    code: str
+
+
+class FavoriteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    type: str
+    code: str
+    title: str = ""
+    last_price: float | None = None
+    change: float | None = None  # günlük değişim (ondalık; 0.012 = %1.2)
+    last_date: date | None = None
+
+
 class PriceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     date: date

@@ -70,6 +70,21 @@ export interface AlarmCreate {
   note?: string | null
 }
 
+export interface Favorite {
+  id: number
+  type: 'FUND' | 'STOCK'
+  code: string
+  title: string
+  last_price?: number | null
+  change?: number | null
+  last_date?: string | null
+}
+
+export interface FavoriteCreate {
+  type: 'FUND' | 'STOCK'
+  code: string
+}
+
 export interface MarketItem {
   label: string
   value: number

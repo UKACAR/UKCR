@@ -23,6 +23,7 @@ _TTL = 600  # 10 dk cache
 
 _snap_cache: dict = {"at": 0.0, "items": []}
 _chart_cache: dict[str, dict] = {}
+_quote_cache: dict[str, dict] = {}
 
 
 def _quote(client: httpx.Client, symbol: str) -> tuple[float, float | None] | None:
@@ -39,6 +40,22 @@ def _quote(client: httpx.Client, symbol: str) -> tuple[float, float | None] | No
         return float(price), (float(prev) if prev else None)
     except Exception:  # noqa: BLE001
         return None
+
+
+def quote_one(symbol: str) -> tuple[float, float | None] | None:
+    """Tek bir sembol için (fiyat, önceki kapanış) — 10 dk cache'li."""
+    now = time.time()
+    c = _quote_cache.get(symbol)
+    if c and now - c["at"] < _TTL:
+        return c["q"]
+    try:
+        with httpx.Client(timeout=12.0, headers=_UA) as client:
+            q = _quote(client, symbol)
+    except Exception:  # noqa: BLE001
+        q = None
+    if q:
+        _quote_cache[symbol] = {"at": now, "q": q}
+    return q
 
 
 def snapshot() -> list[dict]:

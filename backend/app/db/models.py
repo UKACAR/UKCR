@@ -41,6 +41,10 @@ TX_SELL = "SELL"
 ALARM_ABOVE = "PRICE_ABOVE"
 ALARM_BELOW = "PRICE_BELOW"
 
+# Favori türleri
+FAV_FUND = "FUND"    # TEFAS fonu/BES/ETF (DB'de instruments)
+FAV_STOCK = "STOCK"  # BİST hissesi (Yahoo Finance)
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -191,6 +195,27 @@ class Reminder(Base):
     @property
     def code(self) -> str:
         return self.instrument.code if self.instrument else ""
+
+
+class Favorite(Base):
+    """İzleme listesi öğesi — fon (TEFAS) ya da hisse (BİST/Yahoo).
+
+    Fonlar `instruments` tablosundan zenginleştirilir; hisseler Yahoo'dan
+    canlı çekilir. title, ekleme anında çözülüp saklanır (kod -> ad).
+    """
+
+    __tablename__ = "favorites"
+    __table_args__ = (
+        UniqueConstraint("user_id", "type", "code", name="uq_favorite_user_type_code"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    type: Mapped[str] = mapped_column(String(8))  # FUND / STOCK
+    code: Mapped[str] = mapped_column(String(20))
+    title: Mapped[str] = mapped_column(String(255), default="")
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
 class Alarm(Base):
