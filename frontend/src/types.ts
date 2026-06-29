@@ -76,6 +76,17 @@ export interface AlarmCreate {
   note?: string | null
 }
 
+export interface MonthlyReturnsRow {
+  year: number
+  months: (number | null)[]
+  total: number | null
+}
+
+export interface MonthlyReturns {
+  code: string
+  rows: MonthlyReturnsRow[]
+}
+
 export interface AllocItem {
   name: string
   percent: number

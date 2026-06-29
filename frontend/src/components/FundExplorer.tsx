@@ -6,6 +6,7 @@ import { num, pctRaw } from '../format'
 import NavChart from './NavChart'
 import ValorEditor from './ValorEditor'
 import FundAllocation from './FundAllocation'
+import MonthlyReturns from './MonthlyReturns'
 
 const RETURNS: [string, 'ret_1m' | 'ret_3m' | 'ret_6m' | 'ret_ytd' | 'ret_1y' | 'ret_3y' | 'ret_5y'][] = [
   ['1A', 'ret_1m'], ['3A', 'ret_3m'], ['6A', 'ret_6m'], ['YBB', 'ret_ytd'],
@@ -191,6 +192,8 @@ export default function FundExplorer({
           ) : (
             <NavChart data={pricesQ.data ?? []} />
           )}
+
+          <MonthlyReturns code={code} />
 
           <FundAllocation code={code} />
         </div>

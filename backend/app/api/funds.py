@@ -80,6 +80,75 @@ def set_valor(code: str, body: ValorUpdate, db: Session = Depends(get_db)):
     return _fund_detail_payload(db, inst)
 
 
+def _monthly_returns(db: Session, instrument_id: int, n_years: int = 3) -> list[dict]:
+    """Son n_years takvim yılı için aylık % getiriler (ay-sonu NAV'larından).
+
+    Aylık getiri = ay_sonu_NAV / önceki_ay_sonu_NAV - 1. Yıl toplamı, o yılın
+    mevcut aylık getirilerinin bileşik çarpımıdır (Oca→Ara = Ara/önceki_Ara).
+    """
+    rows = db.execute(
+        select(Price.date, Price.price)
+        .where(Price.instrument_id == instrument_id)
+        .order_by(Price.date)
+    ).all()
+    if not rows:
+        return []
+    # her (yıl, ay) için ay-sonu (en geç tarihli) NAV
+    month_end: dict[tuple[int, int], tuple[date, float]] = {}
+    for d, p in rows:
+        key = (d.year, d.month)
+        cur = month_end.get(key)
+        if cur is None or d > cur[0]:
+            month_end[key] = (d, float(p))
+    keys = sorted(month_end)
+    ret: dict[tuple[int, int], float] = {}
+    for i in range(1, len(keys)):
+        prev = month_end[keys[i - 1]][1]
+        cur = month_end[keys[i]][1]
+        if prev:
+            ret[keys[i]] = cur / prev - 1.0
+
+    last_year = keys[-1][0]
+    out: list[dict] = []
+    for y in range(last_year - n_years + 1, last_year + 1):
+        months = [ret.get((y, m)) for m in range(1, 13)]
+        vals = [v for v in months if v is not None]
+        total = None
+        if vals:
+            prod = 1.0
+            for v in vals:
+                prod *= 1.0 + v
+            total = round(prod - 1.0, 6)
+        out.append({
+            "year": y,
+            "months": [round(v, 6) if v is not None else None for v in months],
+            "total": total,
+        })
+    return out
+
+
+@router.get("/{code}/monthly-returns")
+def fund_monthly_returns(
+    code: str,
+    years: int = Query(3, ge=1, le=5),
+    db: Session = Depends(get_db),
+):
+    """Fonun son `years` takvim yılı için aylık % getiri tablosu."""
+    inst = db.execute(select(Instrument).where(Instrument.code == code.upper())).scalars().first()
+    count = (
+        db.scalar(select(func.count(Price.id)).where(Price.instrument_id == inst.id))
+        if inst is not None
+        else 0
+    ) or 0
+    # 3+ yıllık tablo için yeterli geçmiş yoksa daha uzun çek (≈ günlük 250/yıl).
+    if inst is None or count < 250 * years:
+        store.ingest_prices(db, code, 60)
+        inst = db.execute(select(Instrument).where(Instrument.code == code.upper())).scalars().first()
+    if inst is None:
+        raise HTTPException(status_code=404, detail=f"Fon bulunamadı: {code.upper()}")
+    return {"code": code.upper(), "rows": _monthly_returns(db, inst.id, years)}
+
+
 @router.get("/{code}/allocation")
 def fund_allocation(
     code: str,
