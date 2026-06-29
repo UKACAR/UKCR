@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Price
 from app.db.session import get_db
-from app.schemas import MoversOut, NewsItem, OverviewOut
-from app.services import news, overview
+from app.schemas import IndexPoint, MoversOut, NewsItem, OverviewOut
+from app.services import market, news, overview
 
 router = APIRouter(prefix="/api", tags=["overview"])
 
@@ -17,7 +17,12 @@ router = APIRouter(prefix="/api", tags=["overview"])
 @router.get("/overview", response_model=OverviewOut)
 def get_overview(db: Session = Depends(get_db)):
     as_of = db.scalar(select(func.max(Price.date)))
-    return OverviewOut(as_of=as_of, market=overview.market_snapshot())
+    return OverviewOut(as_of=as_of, market=market.snapshot())
+
+
+@router.get("/index", response_model=list[IndexPoint])
+def get_index(symbol: str = Query("XU100.IS"), range: str = Query("1mo")):
+    return market.index_chart(symbol, range)
 
 
 @router.get("/movers", response_model=MoversOut)

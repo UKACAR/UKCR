@@ -1074,6 +1074,15 @@ a.btn:hover {
   color: var(--muted);
 }
 
+.bist-val {
+  font-weight: 800;
+}
+
+.bist-chg {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .app-footer {
   margin-top: 32px;
   color: var(--muted);

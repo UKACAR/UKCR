@@ -101,6 +101,11 @@ export interface NewsItem {
   when: string
 }
 
+export interface IndexPoint {
+  date: string
+  close: number
+}
+
 export interface PricePoint {
   date: string
   price: number

@@ -93,6 +93,11 @@ class NewsItem(BaseModel):
     when: str = ""
 
 
+class IndexPoint(BaseModel):
+    date: str
+    close: float
+
+
 class AlarmCreate(BaseModel):
     fund_code: str
     kind: str = Field(pattern="^(PRICE_ABOVE|PRICE_BELOW)$")

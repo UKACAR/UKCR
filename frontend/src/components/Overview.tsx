@@ -1,12 +1,29 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getMovers, getNews, getOverview, getSummary, listPortfolios } from '../api'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import { getIndexChart, getMovers, getNews, getOverview, getSummary, listPortfolios } from '../api'
 import type { MoverItem } from '../types'
 import { num, pct, tl } from '../format'
 
 const KINDS = [
   { id: 'FON', label: 'Fonlar' },
   { id: 'ETF', label: 'ETF' },
+  { id: 'BES', label: 'BES' },
+]
+
+const RANGES = [
+  { id: '1mo', label: '1A' },
+  { id: '3mo', label: '3A' },
+  { id: '6mo', label: '6A' },
+  { id: '1y', label: '1Y' },
 ]
 
 function MoversTable({ items }: { items: MoverItem[] }) {
@@ -40,8 +57,10 @@ function MoversTable({ items }: { items: MoverItem[] }) {
 
 export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void }) {
   const [kind, setKind] = useState('FON')
+  const [range, setRange] = useState('1mo')
 
   const overviewQ = useQuery({ queryKey: ['overview'], queryFn: getOverview })
+  const indexQ = useQuery({ queryKey: ['index', range], queryFn: () => getIndexChart('XU100.IS', range) })
   const newsQ = useQuery({ queryKey: ['news'], queryFn: getNews })
   const moversQ = useQuery({ queryKey: ['movers', kind], queryFn: () => getMovers(kind) })
   const portfoliosQ = useQuery({ queryKey: ['portfolios'], queryFn: listPortfolios })
@@ -52,6 +71,11 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
     enabled: pid != null,
   })
 
+  const pts = indexQ.data ?? []
+  const bistLast = pts.length ? pts[pts.length - 1].close : null
+  const bistFirst = pts.length ? pts[0].close : null
+  const bistChg = bistLast && bistFirst ? bistLast / bistFirst - 1 : null
+
   return (
     <div className="stack">
       {/* Piyasa şeridi */}
@@ -59,14 +83,66 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
         {overviewQ.data?.market.map((m) => (
           <div className="ticker" key={m.label}>
             <div className="ticker-label">{m.label}</div>
-            <div className="ticker-value">{num(m.value, 4)}</div>
+            <div className="ticker-value">{num(m.value, 2)}</div>
             {m.change != null && (
               <div className={`ticker-change ${m.change >= 0 ? 'pos' : 'neg'}`}>{pct(m.change)}</div>
             )}
           </div>
         ))}
         {overviewQ.data && overviewQ.data.market.length === 0 && (
-          <div className="muted small">Piyasa verisi için EVDS API anahtarı gerekli.</div>
+          <div className="muted small">Piyasa verisi alınamadı.</div>
+        )}
+      </div>
+
+      {/* BİST 100 grafiği */}
+      <div className="card ac-blue">
+        <div className="enler-head">
+          <h2>
+            BİST 100{' '}
+            {bistLast != null && <span className="bist-val">{num(bistLast, 2)}</span>}{' '}
+            {bistChg != null && (
+              <span className={`bist-chg ${bistChg >= 0 ? 'pos' : 'neg'}`}>{pct(bistChg)}</span>
+            )}
+          </h2>
+          <div className="period-row">
+            {RANGES.map((rg) => (
+              <button
+                key={rg.id}
+                className={`chip ${range === rg.id ? 'active' : ''}`}
+                onClick={() => setRange(rg.id)}
+              >
+                {rg.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {pts.length === 0 ? (
+          <p className="muted">{indexQ.isLoading ? 'Grafik yükleniyor…' : 'Grafik verisi yok.'}</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={pts} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(d: string) => d.slice(5)}
+                minTickGap={28}
+                fontSize={11}
+                stroke="var(--muted)"
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                width={56}
+                fontSize={11}
+                stroke="var(--muted)"
+                tickFormatter={(v: number) => v.toFixed(0)}
+              />
+              <Tooltip
+                formatter={(v) => [Number(v).toFixed(2), 'BİST 100']}
+                labelFormatter={(l) => String(l)}
+              />
+              <Line type="monotone" dataKey="close" stroke="var(--accent)" dot={false} strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         )}
       </div>
 
@@ -74,7 +150,7 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
         {/* Sol: portföy + günün enleri */}
         <div className="stack">
           {summaryQ.data && (
-            <div className="card ac-blue">
+            <div className="card ac-teal">
               <h2>Portföy Özeti</h2>
               <div className="overview-portfolio">
                 <div>
@@ -108,7 +184,7 @@ export default function Overview({ onGoPortfolio }: { onGoPortfolio?: () => void
             </div>
           )}
 
-          <div className="card ac-teal">
+          <div className="card ac-green">
             <div className="enler-head">
               <h2>Günün Enleri</h2>
               <div className="period-row">
