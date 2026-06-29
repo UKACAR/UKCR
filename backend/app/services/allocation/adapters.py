@@ -14,20 +14,27 @@ import json
 import re
 import time
 import unicodedata
+from datetime import date
 
 import httpx
 
 from .base import (
+    AllocItem,
     AllocSnapshot,
     find_date,
     make_client,
+    pct,
     pick_asset_allocation,
+    plausible,
 )
 
 
 def slugify_tr(s: str, *, drop_paren: bool = True) -> str:
     if drop_paren:
-        s = re.sub(r"\(.*?\)", "", s)       # parantez içini tamamen at (İş tarzı)
+        prev = None  # iç içe parantezleri içten dışa tekrarlı temizle
+        while prev != s:
+            prev = s
+            s = re.sub(r"\([^()]*\)", "", s)
     else:
         s = s.replace("(", " ").replace(")", " ")  # paren içeriğini koru (Pusula tarzı)
     # Türkçe büyük harfleri lower'DAN ÖNCE sadeleştir: "İ".lower() == "i̇"
@@ -89,9 +96,10 @@ class IsPortfoy(Adapter):
                 for it in arr:
                     t = it.get("title") or ""
                     u = it.get("url") or ""
-                    cm = re.match(r"\s*([A-Z0-9]{2,4})\s*-", t)
+                    cm = re.match(r"\s*([A-Za-z0-9]{2,6})\s*-", t)
                     if cm and u:
-                        m[cm.group(1)] = u if u.startswith("http") else self.site + u
+                        url = u if u.startswith("http") else self.site + u
+                        m.setdefault(cm.group(1).upper(), url)  # ilk eşleşme kalır
             if m:
                 IsPortfoy._map = m
                 IsPortfoy._map_at = time.time()
@@ -102,11 +110,13 @@ class IsPortfoy(Adapter):
     def fetch(self, code, title, client):
         url = self._code_url_map(client).get(code.upper())
         if not url:
-            slug = slugify_tr(title)
-            url = f"{self.site}/{slug}"
+            url = f"{self.site}/{slugify_tr(title)}"
         try:
             html = client.get(url).text
         except Exception:  # noqa: BLE001
+            return None
+        # Yanlış sayfaya düşmediğimizi doğrula (İş fon sayfaları kodu gösterir).
+        if code.upper() not in html.upper():
             return None
         items = pick_asset_allocation(html)
         if not items:
@@ -134,13 +144,35 @@ class AkPortfoy(Adapter):
             html = client.get(url).text
         except Exception:  # noqa: BLE001
             return None
-        items = pick_asset_allocation(html)
+        # Varlık dağılımı görünür HTML'de değil; amCharts donut'unu besleyen
+        # inline `var fundAssetAlloc = [{category, value}, ...]` JSON'unda.
+        # Dizi sonunu güvenle bulmak için regex yerine bracket-dengeli raw_decode.
+        items: list[AllocItem] = []
+        mark = re.search(r"var\s+fundAssetAlloc\s*=\s*", html)
+        if mark:
+            start = html.find("[", mark.end())
+            if start != -1:
+                try:
+                    arr, _ = json.JSONDecoder().raw_decode(html, start)
+                except ValueError:
+                    arr = []
+                for x in arr if isinstance(arr, list) else []:
+                    name = str(x.get("category", "")).strip()
+                    p = pct(x.get("value"))
+                    if name and p is not None:
+                        items.append(AllocItem(name, p))
+        # Yapısal kaynak makul değilse (toplam ~%100 değil) genel çıkarıcıya düş.
+        if not plausible(items):
+            generic = pick_asset_allocation(html)
+            if generic:
+                items = generic
         if not items:
             return None
-        return AllocSnapshot(
-            items=items, source=self.name, source_url=url,
-            as_of=find_date(html, "Portföy Dağılım"),
-        )
+        report = None
+        rm = re.search(r'id="asset-distribution".*?href="(/doc/\d+)"', html, re.S)
+        if rm:
+            report = self.site + rm.group(1)
+        return AllocSnapshot(items=items, source=self.name, source_url=url, report_url=report)
 
 
 # ----------------------------------------------------------------- Tera/Pusula
@@ -187,7 +219,16 @@ class PusulaPortfoy(Adapter):
 
     def fetch(self, code, title, client):
         # Pusula slug'ı parantez içeriğini de tutar (…fonu-hisse-senedi-yogun-fon).
-        for slug in (slugify_tr(title, drop_paren=False), slugify_tr(title)):
+        # Kurucu öneki bazen URL'de yok → öneksiz varyantları da dene.
+        full = slugify_tr(title, drop_paren=False)
+        dropp = slugify_tr(title)
+        cand, seen = [], set()
+        for sl in (full, dropp, re.sub(r"^pusula-portfoy-", "", full),
+                   re.sub(r"^pusula-portfoy-", "", dropp)):
+            if sl and sl not in seen:
+                seen.add(sl)
+                cand.append(sl)
+        for slug in cand:
             u = f"{self.site}/fonlar/{slug}"
             try:
                 h = client.get(u).text
@@ -200,7 +241,61 @@ class PusulaPortfoy(Adapter):
         return None
 
 
-ADAPTERS: list[Adapter] = [IsPortfoy(), AkPortfoy(), TeraPortfoy(), PusulaPortfoy()]
+class GarantiPortfoy(Adapter):
+    name = "Garanti Portföy"
+    site = "https://www.garantibbvaportfoy.com.tr"
+    aliases = ("GARANTİ PORTFÖY", "GARANTI PORTFOY", "GARANTİ BBVA", "GARANTI BBVA")
+
+    def _last_date(self, client) -> date | None:
+        try:
+            r = client.post(
+                f"{self.site}/webservice/lastdate",
+                content="{}",
+                headers={"Content-Type": "application/json"},
+            )
+            ds = json.loads(r.content.decode("utf-8"))
+            if isinstance(ds, str) and re.match(r"\d{4}-\d{2}-\d{2}", ds):
+                y, mo, d = ds[:10].split("-")
+                return date(int(y), int(mo), int(d))
+        except Exception:  # noqa: BLE001
+            pass
+        return None
+
+    def fetch(self, code, title, client):
+        # Dağılım HTML'de değil; site içi JSON web servisinde (POST, token yok).
+        try:
+            r = client.post(
+                f"{self.site}/webservice/portfoliodistributions",
+                params={"code": code.upper(), "lang": "tr"},
+            )
+        except Exception:  # noqa: BLE001
+            return None
+        if r.status_code != 200:  # 404 = Garanti fonu değil
+            return None
+        try:
+            outer = json.loads(r.content.decode("utf-8"))
+            if isinstance(outer, str):  # gövde çift-JSON kodlu
+                outer = json.loads(outer)
+            data = (outer.get("data") or {}).get("Data") or []
+        except Exception:  # noqa: BLE001
+            return None
+        items: list[AllocItem] = []
+        for x in data:
+            name = str(x.get("Name", "")).replace("(%)", "").strip()
+            p = pct(x.get("Percentage"))
+            if name and p is not None:
+                items.append(AllocItem(name, p))
+        if not plausible(items):  # eksik/bozuk satır → yanlış göstermektense yedek
+            return None
+        return AllocSnapshot(
+            items=items, source=self.name, source_url=f"{self.site}/",
+            as_of=self._last_date(client),
+        )
+
+
+ADAPTERS: list[Adapter] = [
+    IsPortfoy(), AkPortfoy(), GarantiPortfoy(), TeraPortfoy(), PusulaPortfoy(),
+]
 
 
 def resolve(title: str) -> Adapter | None:

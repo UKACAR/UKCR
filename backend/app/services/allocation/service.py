@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Allocation, Instrument
@@ -22,9 +23,16 @@ def _aware(dt: datetime | None) -> datetime | None:
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
+def _agg(items: list[dict]) -> dict[str, float]:
+    """Aynı adlı kalemleri toplar (mükerrer ad delta'da çakışmasın)."""
+    d: dict[str, float] = {}
+    for i in items:
+        d[i["name"]] = round(d.get(i["name"], 0.0) + i["percent"], 2)
+    return d
+
+
 def _changed(old_items: list[dict], new_items: list[dict]) -> bool:
-    od = {i["name"]: i["percent"] for i in old_items}
-    nd = {i["name"]: i["percent"] for i in new_items}
+    od, nd = _agg(old_items), _agg(new_items)
     if set(od) != set(nd):
         return True
     return any(abs(od[k] - nd[k]) >= _TOL for k in nd)
@@ -41,15 +49,15 @@ def _rows(db: Session, instrument_id: int) -> list[Allocation]:
 
 
 def _diff(latest: list[dict], prev: list[dict] | None) -> list[dict]:
-    pd = {i["name"]: i["percent"] for i in (prev or [])}
+    nd, pd = _agg(latest), _agg(prev or [])
     out = []
-    for it in latest:
-        p = pd.get(it["name"])
+    for name, cur in nd.items():
+        p = pd.get(name)
         out.append({
-            "name": it["name"],
-            "percent": it["percent"],
+            "name": name,
+            "percent": cur,
             "prev": p,
-            "delta": (round(it["percent"] - p, 2) if p is not None else None),
+            "delta": (round(cur - p, 2) if p is not None else None),
         })
     return out
 
@@ -66,11 +74,8 @@ def get_allocation(db: Session, code: str, *, refresh: bool = True) -> dict:
     # Tazelik: son çekim 12 saatten yeniyse tekrar çekme (özellikle yavaş
     # siteler için UI'ı hızlı tut; veri zaten en çok günlük değişir).
     existing_rows = _rows(db, inst.id)
-    fresh = bool(
-        existing_rows
-        and (_aware(existing_rows[0].fetched_at) or datetime.now(timezone.utc))
-        and datetime.now(timezone.utc) - _aware(existing_rows[0].fetched_at) < _FRESH
-    )
+    _fa = _aware(existing_rows[0].fetched_at) if existing_rows else None
+    fresh = bool(_fa and datetime.now(timezone.utc) - _fa < _FRESH)
 
     # Canlı çek + değiştiyse sakla
     if refresh and adapter is not None and not fresh:
@@ -91,17 +96,23 @@ def get_allocation(db: Session, code: str, *, refresh: bool = True) -> dict:
                 )
             ).scalars().first()
             rows = _rows(db, inst.id)
+            # Aynı kaynağın en yeni kaydına göre değişim kontrolü (kaynaklar karışmasın).
+            same_src = next((r for r in rows if r.source == snap.source), None)
             if existing is not None:
                 existing.items = new_items
                 existing.source_url = snap.source_url
                 existing.report_url = snap.report_url
                 existing.fetched_at = datetime.now(timezone.utc)
-            elif not rows or _changed(rows[0].items, new_items):
+            elif same_src is None or _changed(same_src.items, new_items):
                 db.add(Allocation(
                     instrument_id=inst.id, as_of=as_of, source=snap.source,
                     source_url=snap.source_url, report_url=snap.report_url, items=new_items,
                 ))
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                # Eşzamanlı istek aynı (fon,tarih,kaynak) satırını eklemiş olabilir.
+                db.rollback()
 
     rows = _rows(db, inst.id)
     last3 = rows[:3]

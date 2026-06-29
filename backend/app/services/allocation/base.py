@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from datetime import date
+from html import unescape
 
 import httpx
 
@@ -28,7 +29,8 @@ _UA = {
 ASSET_HINTS = (
     "hisse", "repo", "tahvil", "bono", "borçlanma", "mevduat", "katılma",
     "para piyasası", "kıymet", "eurobond", "vadeli", "fon", "altın", "döviz",
-    "kira sertifika", "menkul", "diğer", "varant",
+    "kira sertifika", "menkul", "diğer", "varant", "girişim", "gayrimenkul",
+    "sermaye", "teminat", "endeks", "hesap",
 )
 
 
@@ -70,6 +72,27 @@ def pct(raw) -> float | None:
         return None
 
 
+def is_label(name: str) -> bool:
+    """Geçerli bir varlık-sınıfı adı mı? (yalnız-sayı/çoğunlukla-sayı hücreleri ele;
+    ama 'BIST 30 Hisse', '10 Yıllık Tahvil' gibi rakamlı GERÇEK adları KORU)."""
+    n = (name or "").strip()
+    if not (1 < len(n) <= 60):
+        return False
+    if re.fullmatch(r"[\d.,%\s+-]+", n):  # tamamen sayı/işaret
+        return False
+    nonspace = sum(1 for c in n if not c.isspace())
+    digits = sum(1 for c in n if c.isdigit())
+    return not (nonspace and digits / nonspace > 0.5)
+
+
+def plausible(items: list["AllocItem"]) -> bool:
+    """Bir dağılımın makul olup olmadığı: ~%100'e toplanır ve 1-25 kalem."""
+    if not items or len(items) > 25:
+        return False
+    total = sum(i.percent for i in items)
+    return 85 <= total <= 110
+
+
 def _looks_asset(labels: list[str]) -> int:
     """Etiket listesinin varlık-dağılımı gibi görünme skoru."""
     joined = " ".join(labels).lower()
@@ -80,7 +103,7 @@ def from_chartjs(html: str) -> list[list[AllocItem]]:
     """Chart.js canvas'larındaki data-options JSON'undan (labels+data) dağılımlar."""
     out: list[list[AllocItem]] = []
     for m in re.finditer(r'data-options="([^"]+)"', html):
-        raw = m.group(1).replace("&quot;", '"').replace("&#34;", '"').replace("&amp;", "&")
+        raw = unescape(m.group(1))
         try:
             obj = json.loads(raw)
         except Exception:  # noqa: BLE001
@@ -129,7 +152,7 @@ def from_table(html: str) -> list[AllocItem]:
         if m and i > 0:
             lab = cells[i - 1]
             p = pct(m.group(1))
-            if lab and not re.search(r"\d", lab) and 2 < len(lab) < 46 and p is not None:
+            if is_label(lab) and p is not None:
                 key = lab.lower()
                 if key not in seen:
                     seen.add(key)
@@ -150,12 +173,27 @@ def from_rsc(html: str) -> list[AllocItem]:
             continue
     blob = "".join(parts)
     items: list[AllocItem] = []
-    for name, val in re.findall(
-        r'\{"label":"([^"]+)","percentage":(-?\d+(?:\.\d+)?)\}', blob
-    ):
+    lc = r'(?:[^"\\]|\\.)*'  # kaçışlı karakterleri de kapsayan etiket
+
+    def _add(name_raw: str, val: str) -> None:
+        try:
+            name = json.loads('"' + name_raw + '"')  # \" \\ \uXXXX çözülür
+        except Exception:  # noqa: BLE001
+            name = name_raw
         p = pct(val)
         if name and p is not None:
-            items.append(AllocItem(name.strip(), p))
+            items.append(AllocItem(str(name).strip(), p))
+
+    # Anahtar sırası ve boşluklara toleranslı (Next.js serileştirmesi değişebilir).
+    for m in re.finditer(
+        r'"label"\s*:\s*"(' + lc + r')"\s*,\s*"percentage"\s*:\s*(-?\d+(?:\.\d+)?)', blob
+    ):
+        _add(m.group(1), m.group(2))
+    if not items:
+        for m in re.finditer(
+            r'"percentage"\s*:\s*(-?\d+(?:\.\d+)?)\s*,\s*"label"\s*:\s*"(' + lc + r')"', blob
+        ):
+            _add(m.group(2), m.group(1))
     return items
 
 
@@ -177,15 +215,10 @@ def pick_asset_allocation(html: str) -> list[AllocItem]:
     if tbl:
         raw_candidates.append(tbl)
 
-    # Etiket temizliği: varlık sınıfı adları kısa ve rakamsızdır; "Fon Toplam
-    # Değeri (TL) 7.621.741,3" gibi gürültülü kalemleri at.
+    # Etiket temizliği: yalnız-sayı/çoğunlukla-sayı gürültüsünü at, ama 'BIST 30
+    # Hisse' gibi rakamlı gerçek adları koru (is_label).
     def _clean(items: list[AllocItem]) -> list[AllocItem]:
-        out = []
-        for it in items:
-            n = it.name.strip()
-            if 1 < len(n) <= 40 and not re.search(r"\d", n):
-                out.append(AllocItem(n, it.percent))
-        return out
+        return [AllocItem(it.name.strip(), it.percent) for it in items if is_label(it.name)]
 
     candidates = [c for c in (_clean(x) for x in raw_candidates) if c]
 
@@ -203,7 +236,9 @@ def pick_asset_allocation(html: str) -> list[AllocItem]:
             continue
         close = 1 if 90 <= total <= 105 else 0
         key = (score + close, -abs(100 - total))
-        if score >= 1 and key > best_score:
+        # Varlık ipucu içeren VEYA tek başına ~%100 olan (tek-sınıflı fon) adayı kabul et.
+        ok_kind = score >= 1 or (len(items) == 1 and 95 <= total <= 105)
+        if ok_kind and key > best_score:
             best_score = key
             best = items
     return best
