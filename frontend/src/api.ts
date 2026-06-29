@@ -52,9 +52,9 @@ export const deleteTransaction = (pid: number, txId: number) =>
 export const getSummary = (pid: number) =>
   http.get<Summary>(`/portfolios/${pid}/summary`).then((r) => r.data)
 
-export const compareFunds = (codes: string[], period = 12) =>
+export const compareFunds = (codes: string[], periodDays = 365) =>
   http
-    .get<CompareResponse>('/compare', { params: { codes: codes.join(','), period } })
+    .get<CompareResponse>('/compare', { params: { codes: codes.join(','), period_days: periodDays } })
     .then((r) => r.data)
 
 export const updateValor = (code: string, body: ValorUpdate) =>

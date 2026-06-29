@@ -713,6 +713,64 @@ th.r {
   vertical-align: baseline;
 }
 
+.suggest-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.suggest-wrap .input {
+  width: 100%;
+}
+
+.suggest-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.suggest-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 9px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font: inherit;
+}
+
+.suggest-item:hover {
+  background: var(--bg);
+}
+
+.suggest-item .code {
+  font-weight: 700;
+  color: var(--accent-2);
+  min-width: 44px;
+}
+
+.suggest-item .title {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .compare-actions {
   display: flex;
   justify-content: space-between;

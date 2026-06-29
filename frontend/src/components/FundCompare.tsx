@@ -11,16 +11,25 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { compareFunds } from '../api'
+import { compareFunds, searchFunds } from '../api'
 import { num, pct } from '../format'
 
 const COLORS = ['#1d9e75', '#2f6feb', '#d8453a', '#e07b39', '#7f77dd', '#caa21f']
 const cls = (v?: number | null) => (v == null ? '' : v >= 0 ? 'pos' : 'neg')
 
+const PERIODS = [
+  { label: '1H', days: 7 },
+  { label: '1A', days: 30 },
+  { label: '3A', days: 90 },
+  { label: '1Y', days: 365 },
+  { label: '3Y', days: 1095 },
+  { label: '5Y', days: 1825 },
+]
+
 export default function FundCompare() {
   const [codes, setCodes] = useState<string[]>([])
   const [input, setInput] = useState('')
-  const [period, setPeriod] = useState(12)
+  const [period, setPeriod] = useState(365)
   const [submitted, setSubmitted] = useState<string[]>([])
 
   const q = useQuery({
@@ -29,11 +38,22 @@ export default function FundCompare() {
     enabled: submitted.length > 0,
   })
 
-  const addCode = (e: FormEvent) => {
-    e.preventDefault()
-    const c = input.trim().toUpperCase()
+  const term = input.trim()
+  const suggestQ = useQuery({
+    queryKey: ['fundSuggest', term],
+    queryFn: () => searchFunds(term, undefined, 8),
+    enabled: term.length >= 2,
+  })
+  const showSuggest = term.length >= 2 && (suggestQ.data?.length ?? 0) > 0
+
+  const addCode = (raw: string) => {
+    const c = raw.trim().toUpperCase()
     if (c && !codes.includes(c) && codes.length < 6) setCodes([...codes, c])
     setInput('')
+  }
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    addCode(input)
   }
   const remove = (c: string) => setCodes(codes.filter((x) => x !== c))
 
@@ -41,13 +61,34 @@ export default function FundCompare() {
     <div className="card ac-purple">
       <h2>Fon Karşılaştırma</h2>
 
-      <form className="row" onSubmit={addCode}>
-        <input
-          className="input"
-          placeholder="Fon kodu ekle (örn. AAS) — en çok 6"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
+      <form className="row" onSubmit={onSubmit} autoComplete="off">
+        <div className="suggest-wrap">
+          <input
+            className="input"
+            placeholder="Fon kodu veya adı yaz (örn. ALTIN, AAS) — en çok 6"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          {showSuggest && (
+            <ul className="suggest-list">
+              {suggestQ.data!.map((f) => (
+                <li key={f.code}>
+                  <button
+                    type="button"
+                    className="suggest-item"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      addCode(f.code)
+                    }}
+                  >
+                    <span className="code">{f.code}</span>
+                    <span className="title">{f.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <button className="btn btn-ghost" type="submit">
           + Ekle
         </button>
@@ -69,13 +110,13 @@ export default function FundCompare() {
 
       <div className="compare-actions">
         <div className="period-row">
-          {[3, 12, 36, 60].map((p) => (
+          {PERIODS.map((p) => (
             <button
-              key={p}
-              className={`chip ${period === p ? 'active' : ''}`}
-              onClick={() => setPeriod(p)}
+              key={p.days}
+              className={`chip ${period === p.days ? 'active' : ''}`}
+              onClick={() => setPeriod(p.days)}
             >
-              {p === 3 ? '3A' : `${p / 12}Y`}
+              {p.label}
             </button>
           ))}
         </div>
