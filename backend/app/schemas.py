@@ -78,8 +78,19 @@ class MoverItem(BaseModel):
 class OverviewOut(BaseModel):
     as_of: date | None = None
     market: list[MarketItem] = []
+
+
+class MoversOut(BaseModel):
+    as_of: date | None = None
     gainers: list[MoverItem] = []
     losers: list[MoverItem] = []
+
+
+class NewsItem(BaseModel):
+    title: str
+    link: str
+    source: str = ""
+    when: str = ""
 
 
 class AlarmCreate(BaseModel):

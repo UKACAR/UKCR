@@ -6,6 +6,8 @@ import type {
   FundDetail,
   FundListItem,
   ImportResult,
+  Movers,
+  NewsItem,
   Overview,
   Portfolio,
   PricePoint,
@@ -93,3 +95,8 @@ export const toggleAlarm = (id: number, active: boolean) =>
 export const deleteAlarm = (id: number) => http.delete(`/alarms/${id}`).then((r) => r.data)
 
 export const getOverview = () => http.get<Overview>('/overview').then((r) => r.data)
+
+export const getMovers = (kind = 'FON') =>
+  http.get<Movers>('/movers', { params: { kind } }).then((r) => r.data)
+
+export const getNews = () => http.get<NewsItem[]>('/news').then((r) => r.data)

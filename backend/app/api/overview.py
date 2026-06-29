@@ -1,23 +1,34 @@
-"""Günün Özeti ucu: piyasa (döviz) + en çok kazanan/kaybeden fonlar."""
+"""Günün Özeti uçları: piyasa, en çok kazanan/kaybeden (kind'e göre), haberler."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.db.models import Price
 from app.db.session import get_db
-from app.schemas import OverviewOut
-from app.services import overview
+from app.schemas import MoversOut, NewsItem, OverviewOut
+from app.services import news, overview
 
-router = APIRouter(prefix="/api/overview", tags=["overview"])
+router = APIRouter(prefix="/api", tags=["overview"])
 
 
-@router.get("", response_model=OverviewOut)
+@router.get("/overview", response_model=OverviewOut)
 def get_overview(db: Session = Depends(get_db)):
-    gainers, losers, as_of = overview.top_fund_movers(db)
-    return OverviewOut(
-        as_of=as_of,
-        market=overview.market_snapshot(),
-        gainers=gainers,
-        losers=losers,
-    )
+    as_of = db.scalar(select(func.max(Price.date)))
+    return OverviewOut(as_of=as_of, market=overview.market_snapshot())
+
+
+@router.get("/movers", response_model=MoversOut)
+def get_movers(
+    kind: str = Query("FON", description="FON / ETF / BES"),
+    db: Session = Depends(get_db),
+):
+    gainers, losers, as_of = overview.top_fund_movers(db, kind=kind)
+    return MoversOut(as_of=as_of, gainers=gainers, losers=losers)
+
+
+@router.get("/news", response_model=list[NewsItem])
+def get_news():
+    return news.latest()

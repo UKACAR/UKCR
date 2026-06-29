@@ -86,8 +86,19 @@ export interface MoverItem {
 export interface Overview {
   as_of?: string | null
   market: MarketItem[]
+}
+
+export interface Movers {
+  as_of?: string | null
   gainers: MoverItem[]
   losers: MoverItem[]
+}
+
+export interface NewsItem {
+  title: string
+  link: string
+  source: string
+  when: string
 }
 
 export interface PricePoint {
