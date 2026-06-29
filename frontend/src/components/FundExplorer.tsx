@@ -5,6 +5,7 @@ import { getFund, getFundPrices, searchFunds } from '../api'
 import { num, pctRaw } from '../format'
 import NavChart from './NavChart'
 import ValorEditor from './ValorEditor'
+import FundAllocation from './FundAllocation'
 
 export default function FundExplorer({ onPick }: { onPick?: (code: string) => void }) {
   const [term, setTerm] = useState('')
@@ -129,6 +130,8 @@ export default function FundExplorer({ onPick }: { onPick?: (code: string) => vo
           ) : (
             <NavChart data={pricesQ.data ?? []} />
           )}
+
+          <FundAllocation code={code} />
         </div>
       )}
     </div>

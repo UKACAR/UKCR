@@ -1261,6 +1261,115 @@ a.btn:hover {
   margin-top: 1px;
 }
 
+/* Fon Keşfi — Portföy Dağılımı */
+.alloc {
+  margin-top: 18px;
+  border-top: 1.5px solid var(--border);
+  padding-top: 14px;
+}
+
+.alloc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.alloc-head h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.alloc-dates {
+  margin: 4px 0 10px;
+}
+
+.alloc-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.alloc-bars li {
+  display: grid;
+  grid-template-columns: 150px 1fr 60px 56px;
+  align-items: center;
+  gap: 8px;
+}
+
+.alloc-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alloc-track {
+  height: 10px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.alloc-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-2), #2f6feb);
+  border-radius: 999px;
+}
+
+.alloc-pct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+.alloc-delta {
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.alloc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.alloc-links a {
+  color: var(--accent-2);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.alloc-links a:hover {
+  text-decoration: underline;
+}
+
+.alloc-fallback {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.alloc-fallback p {
+  margin: 0 0 6px;
+}
+
+@media (max-width: 560px) {
+  .alloc-bars li {
+    grid-template-columns: 110px 1fr 52px 48px;
+  }
+}
+
 .app-footer {
   margin-top: 32px;
   color: var(--muted);

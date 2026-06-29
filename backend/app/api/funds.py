@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.ingestion import store
 from app.schemas import FundDetail, FundListItem, PriceOut, ValorUpdate
 from app.services import valor
+from app.services.allocation import get_allocation
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 
@@ -75,6 +76,16 @@ def set_valor(code: str, body: ValorUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(inst)
     return _fund_detail_payload(db, inst)
+
+
+@router.get("/{code}/allocation")
+def fund_allocation(
+    code: str,
+    refresh: bool = Query(True, description="Kurucu sitesinden canlı çek"),
+    db: Session = Depends(get_db),
+):
+    """Fonun varlık/portföy dağılımı (kurucu resmî sitesinden) + son 3 güncelleme + değişim."""
+    return get_allocation(db, code, refresh=refresh)
 
 
 @router.get("/{code}/prices", response_model=list[PriceOut])

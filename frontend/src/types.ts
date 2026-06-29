@@ -70,6 +70,43 @@ export interface AlarmCreate {
   note?: string | null
 }
 
+export interface AllocItem {
+  name: string
+  percent: number
+}
+
+export interface AllocChange {
+  name: string
+  percent: number
+  prev?: number | null
+  delta?: number | null
+}
+
+export interface AllocSnapshot {
+  as_of: string
+  items: AllocItem[]
+}
+
+export interface FundAllocation {
+  code: string
+  title: string
+  kurucu?: string
+  supported: boolean
+  source?: string | null
+  source_url?: string | null
+  report_url?: string | null
+  snapshots: AllocSnapshot[]
+  update_dates?: string[]
+  change: AllocChange[]
+  fallback?: {
+    kurucu?: string
+    kurucu_site?: string | null
+    kap_search?: string
+    note?: string
+  }
+  reason?: string
+}
+
 export interface Favorite {
   id: number
   type: 'FUND' | 'STOCK'
