@@ -176,39 +176,94 @@ class AkPortfoy(Adapter):
 
 
 # ----------------------------------------------------------------- Tera/Pusula
+# Tera dağılım grafiği etiketlerini İngilizce yayınlıyor → Türkçeye çevir.
+_TERA_TR = {
+    "stocks instruments": "Hisse Senedi",
+    "reverse repo instruments": "Ters Repo",
+    "real estate investment funds participation shares": "Gayrimenkul Yatırım Fonları",
+    "mutual funds participation shares": "Yatırım Fonları Katılma Payları",
+    "futures cash collaterals": "Vadeli İşlem Nakit Teminatları",
+    "private lease certificate": "Özel Sektör Kira Sertifikası",
+    "public lease certificate": "Kamu Kira Sertifikası",
+    "funding bonds": "Finansman Bonosu",
+    "government bonds": "Devlet Tahvili",
+    "government bond": "Devlet Tahvili",
+    "treasury bills": "Hazine Bonosu",
+    "bank bills": "Banka Bonosu",
+    "term deposit": "Vadeli Mevduat",
+    "participation account": "Katılma Hesabı",
+    "deposit": "Mevduat",
+    "eurobond": "Eurobond",
+    "precious metals": "Kıymetli Madenler",
+    "foreign": "Yabancı Menkul Kıymet",
+}
+
+
+def _tera_label(en: str) -> str:
+    s = re.sub(r"\s*\(?\s*%\s*\)?\s*$", "", str(en)).strip()  # sondaki (%)/%
+    s = re.sub(r"^Fund\s+", "", s, flags=re.I).strip()
+    key = s.lower()
+    if key in _TERA_TR:
+        return _TERA_TR[key]
+    for k, v in _TERA_TR.items():
+        if k in key:
+            return v
+    return s  # çevrilemezse temizlenmiş İngilizce
+
+
 class TeraPortfoy(Adapter):
     name = "Tera Portföy"
     site = "https://www.teraportfoy.com"
     aliases = ("TERA PORTFÖY", "TERA PORTFOY")
 
-    # Not: Tera sunucusu bazı IP'lerden (ör. veri merkezi) TLS bağlantısını
-    # resetliyor; kullanıcının TR yerel IP'sinden genelde erişilebilir.
+    # Dağılım, fon sayfasındaki data-portfolio-chart-labels/-values script'lerinde
+    # (Highcharts donut). URL slug'ı genelde -{kod} ile biter (güvenilir eşleşme).
+    # Not: Tera sunucusu ara sıra TLS bağlantısını resetliyor → o zaman yedek.
+    def _parse(self, html: str, url: str) -> AllocSnapshot | None:
+        lm = re.search(r"data-portfolio-chart-labels[^>]*>\s*(.*?)\s*</script>", html, re.S)
+        vm = re.search(r"data-portfolio-chart-values[^>]*>\s*(.*?)\s*</script>", html, re.S)
+        if not (lm and vm):
+            return None
+        try:
+            labels = json.loads(lm.group(1))
+            values = json.loads(vm.group(1))
+        except Exception:  # noqa: BLE001
+            return None
+        items: list[AllocItem] = []
+        for en, v in zip(labels, values):
+            p = pct(v)
+            name = _tera_label(en)
+            if name and p is not None:
+                items.append(AllocItem(name, p))
+        if not plausible(items):
+            return None
+        as_of = None
+        dm = re.search(r'data-portfolio-chart-update-date="([^"]*)"', html)
+        if dm and dm.group(1).strip():
+            as_of = find_date(dm.group(1))
+        return AllocSnapshot(items=items, source=self.name, source_url=url, as_of=as_of)
+
     def fetch(self, code, title, client):
         try:
             fl = client.get(self.site + "/fonlarimiz").text
         except Exception:  # noqa: BLE001
             return None
-        links = []
-        seen = set()
-        for l in re.findall(r'href="([^"]*(?:yatirim-fonlari|/fon)[^"]+)"', fl):
-            full = l if l.startswith("http") else self.site + l
-            if full not in seen:
-                seen.add(full)
-                links.append(full)
-        # Başlık kelimeleriyle URL slug'ı en çok örtüşen ilk birkaç adayı dene
-        # (tüm fonları çekip siteyi yormamak ve API'yi kilitlememek için).
-        words = {w for w in slugify_tr(title).split("-") if len(w) > 3}
-        links.sort(key=lambda u: -sum(1 for w in words if w in u.lower()))
-        up = code.upper()
-        for full in links[:4]:
+        links = sorted(set(re.findall(r'href="(/fonlarimiz/[^"]+)"', fl)))
+        low = code.lower()
+        # Önce slug sonu "-{kod}" (kesin), yoksa başlık kelime örtüşmesi.
+        cand = [l for l in links if l.lower().rstrip("/").endswith("-" + low)]
+        if not cand:
+            words = {w for w in slugify_tr(title).split("-") if len(w) > 3}
+            cand = sorted(links, key=lambda u: -sum(1 for w in words if w in u.lower()))[:4]
+        for l in cand[:4]:
+            full = self.site + l
             try:
                 h = client.get(full).text
             except Exception:  # noqa: BLE001
                 continue
-            items = pick_asset_allocation(h)
-            if items and (up in h.upper() or len(items) >= 2):
-                return AllocSnapshot(items=items, source=self.name,
-                                     source_url=full, as_of=find_date(h, "Dağılım"))
+            snap = self._parse(h, full)
+            if snap:
+                return snap
         return None
 
 
