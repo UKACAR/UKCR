@@ -80,11 +80,15 @@ def set_valor(code: str, body: ValorUpdate, db: Session = Depends(get_db)):
     return _fund_detail_payload(db, inst)
 
 
-def _monthly_returns(db: Session, instrument_id: int, n_years: int = 3) -> list[dict]:
+def _monthly_returns(
+    db: Session, instrument_id: int, n_years: int = 3, *, real: bool = False
+) -> list[dict]:
     """Son n_years takvim yılı için aylık % getiriler (ay-sonu NAV'larından).
 
     Aylık getiri = ay_sonu_NAV / önceki_ay_sonu_NAV - 1. Yıl toplamı, o yılın
     mevcut aylık getirilerinin bileşik çarpımıdır (Oca→Ara = Ara/önceki_Ara).
+    real=True ise her ay EVDS aylık TÜFE'siyle reelleştirilir
+    ((1+nominal)/(1+enflasyon)-1); enflasyonu olmayan (gecikmeli) aylar nominal kalır.
     """
     rows = db.execute(
         select(Price.date, Price.price)
@@ -109,8 +113,20 @@ def _monthly_returns(db: Session, instrument_id: int, n_years: int = 3) -> list[
             ret[keys[i]] = cur / prev - 1.0
 
     last_year = keys[-1][0]
+    first_year = last_year - n_years + 1
+
+    if real and ret:
+        from app.services import evds
+
+        last_ym = keys[-1]
+        infl = evds.monthly_inflation(date(first_year, 1, 1), date(last_ym[0], last_ym[1], 1))
+        if infl:
+            for k in list(ret.keys()):
+                if k in infl:
+                    ret[k] = evds.real_return(ret[k], infl[k])
+
     out: list[dict] = []
-    for y in range(last_year - n_years + 1, last_year + 1):
+    for y in range(first_year, last_year + 1):
         months = [ret.get((y, m)) for m in range(1, 13)]
         vals = [v for v in months if v is not None]
         total = None
@@ -131,9 +147,10 @@ def _monthly_returns(db: Session, instrument_id: int, n_years: int = 3) -> list[
 def fund_monthly_returns(
     code: str,
     years: int = Query(3, ge=1, le=5),
+    real: bool = Query(False, description="Reel (TÜFE'den arındırılmış) aylık getiri"),
     db: Session = Depends(get_db),
 ):
-    """Fonun son `years` takvim yılı için aylık % getiri tablosu."""
+    """Fonun son `years` takvim yılı için aylık % getiri tablosu (nominal veya reel)."""
     inst = db.execute(select(Instrument).where(Instrument.code == code.upper())).scalars().first()
     count = (
         db.scalar(select(func.count(Price.id)).where(Price.instrument_id == inst.id))
@@ -146,7 +163,7 @@ def fund_monthly_returns(
         inst = db.execute(select(Instrument).where(Instrument.code == code.upper())).scalars().first()
     if inst is None:
         raise HTTPException(status_code=404, detail=f"Fon bulunamadı: {code.upper()}")
-    return {"code": code.upper(), "rows": _monthly_returns(db, inst.id, years)}
+    return {"code": code.upper(), "real": real, "rows": _monthly_returns(db, inst.id, years, real=real)}
 
 
 @router.get("/{code}/allocation")

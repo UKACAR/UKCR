@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getFundMonthlyReturns } from '../api'
 
@@ -17,15 +18,44 @@ const bg = (v: number | null | undefined): string | undefined => {
 }
 
 export default function MonthlyReturns({ code }: { code: string }) {
-  const q = useQuery({ queryKey: ['monthly', code], queryFn: () => getFundMonthlyReturns(code) })
+  const [real, setReal] = useState(false)
+  const q = useQuery({
+    queryKey: ['monthly', code, real],
+    queryFn: () => getFundMonthlyReturns(code, 3, real),
+  })
 
-  if (q.isLoading) return <p className="muted small">Aylık getiriler yükleniyor…</p>
   const rows = q.data?.rows ?? []
-  if (rows.length === 0) return null
 
   return (
     <div className="monthly">
-      <div className="chart-caption muted small">Aylık getiri (%) — son {rows.length} yıl</div>
+      <div className="monthly-head">
+        <div className="chart-caption muted small">
+          Aylık getiri (%) — son {rows.length || 3} yıl
+          {real ? ' · reel (TÜFE’den arındırılmış)' : ''}
+        </div>
+        <div className="seg seg-sm">
+          <button
+            type="button"
+            className={`seg-btn ${real ? '' : 'active'}`}
+            onClick={() => setReal(false)}
+          >
+            Nominal
+          </button>
+          <button
+            type="button"
+            className={`seg-btn ${real ? 'active' : ''}`}
+            onClick={() => setReal(true)}
+          >
+            Reel
+          </button>
+        </div>
+      </div>
+
+      {q.isLoading ? (
+        <p className="muted small">Aylık getiriler yükleniyor…</p>
+      ) : rows.length === 0 ? (
+        <p className="muted small">Aylık getiri verisi yok.</p>
+      ) : (
       <div className="table-wrap">
         <table className="monthly-table">
           <thead>
@@ -58,6 +88,7 @@ export default function MonthlyReturns({ code }: { code: string }) {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }

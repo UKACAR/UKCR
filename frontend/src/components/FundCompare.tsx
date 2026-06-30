@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import { compareFunds, searchFunds } from '../api'
 import { num, pct } from '../format'
+import MonthlyReturns from './MonthlyReturns'
 
 const COLORS = ['#1d9e75', '#2f6feb', '#d8453a', '#e07b39', '#7f77dd', '#caa21f']
 const cls = (v?: number | null) => (v == null ? '' : v >= 0 ? 'pos' : 'neg')
@@ -232,6 +233,19 @@ export default function FundCompare({ onOpenFund }: { onOpenFund?: (code: string
               ))}
             </LineChart>
           </ResponsiveContainer>
+
+          <div className="compare-monthly">
+            <h3>Aylık Getiriler</h3>
+            {q.data.funds.map((f, i) => (
+              <div key={f.code} className="cmp-monthly-fund">
+                <div className="cmp-monthly-head">
+                  <span className="dot" style={{ background: COLORS[i % COLORS.length] }} />
+                  <b>{f.code}</b> <span className="muted small">{f.title}</span>
+                </div>
+                <MonthlyReturns code={f.code} />
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>

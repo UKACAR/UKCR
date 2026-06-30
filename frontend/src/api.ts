@@ -42,9 +42,9 @@ export const getFundPrices = (code: string, period = 12) =>
 export const getFundAllocation = (code: string) =>
   http.get<FundAllocation>(`/funds/${code}/allocation`).then((r) => r.data)
 
-export const getFundMonthlyReturns = (code: string, years = 3) =>
+export const getFundMonthlyReturns = (code: string, years = 3, real = false) =>
   http
-    .get<MonthlyReturns>(`/funds/${code}/monthly-returns`, { params: { years } })
+    .get<MonthlyReturns>(`/funds/${code}/monthly-returns`, { params: { years, real } })
     .then((r) => r.data)
 
 export const listPortfolios = () => http.get<Portfolio[]>('/portfolios').then((r) => r.data)

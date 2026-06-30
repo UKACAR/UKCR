@@ -24,6 +24,45 @@ USD_SERIES = "TP.DK.USD.A.YTL"   # USD/TRY (alış)
 
 # Geçmiş TÜFE değişmediği için dönem enflasyonunu bellekte cache'leriz.
 _inflation_cache: dict[tuple[str, str], float | None] = {}
+_monthly_infl_cache: dict[tuple[str, str], dict] = {}
+
+
+def monthly_inflation(
+    start: date, end: date, *, client: httpx.Client | None = None
+) -> dict[tuple[int, int], float]:
+    """[start, end] aralığındaki aylık TÜFE enflasyonu: {(yıl, ay): oran}.
+
+    Aylık oran = TÜFE[ay] / TÜFE[önceki ay] - 1. Anahtar yoksa boş döner.
+    Yayınlanmamış (gecikmeli) güncel aylar sözlükte bulunmaz.
+    """
+    if not settings.evds_api_key:
+        return {}
+    ck = (start.isoformat(), end.isoformat())
+    if ck in _monthly_infl_cache:
+        return _monthly_infl_cache[ck]
+
+    out: dict[tuple[int, int], float] = {}
+    try:
+        # Bir önceki ayı da iste (ilk ayın oranı için baz lazım).
+        y, m = start.year, start.month - 1
+        if m == 0:
+            m, y = 12, y - 1
+        pts: list[tuple[tuple[int, int], float]] = []
+        for label, val in fetch_series(CPI_SERIES, date(y, m, 1), end, client=client):
+            ym = _ym(label)
+            if ym and val:
+                pts.append((ym, val))
+        pts.sort(key=lambda x: x[0])
+        for i in range(1, len(pts)):
+            prev_v = pts[i - 1][1]
+            cur_ym, cur_v = pts[i]
+            if prev_v:
+                out[cur_ym] = cur_v / prev_v - 1.0
+    except Exception:  # noqa: BLE001
+        out = {}
+
+    _monthly_infl_cache[ck] = out
+    return out
 
 
 def real_return(nominal: float, inflation: float) -> float:

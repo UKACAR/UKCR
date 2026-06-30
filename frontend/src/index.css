@@ -208,7 +208,7 @@ body {
     padding: 10px;
   }
   .content {
-    padding: 18px 16px 40px;
+    padding: 18px 14px 40px;
   }
 }
 
@@ -1411,6 +1411,28 @@ a.btn:hover {
   margin-top: 16px;
 }
 
+.monthly-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.monthly-head .chart-caption {
+  margin: 0;
+}
+
+.seg-sm {
+  border-radius: 8px;
+}
+
+.seg-sm .seg-btn {
+  padding: 5px 11px;
+  font-size: 12px;
+}
+
 .monthly-table {
   border-collapse: separate;
   border-spacing: 2px;
@@ -1443,6 +1465,33 @@ a.btn:hover {
 .mr-total {
   font-weight: 700;
   border-left: 2px solid var(--border);
+}
+
+/* Karşılaştırma — fon başına aylık getiri */
+.compare-monthly {
+  margin-top: 20px;
+  border-top: 1.5px solid var(--border);
+  padding-top: 12px;
+}
+
+.compare-monthly h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.cmp-monthly-fund {
+  margin-top: 6px;
+}
+
+.cmp-monthly-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.cmp-monthly-fund .monthly {
+  margin-top: 6px;
 }
 
 /* Tıklanabilir fon kodu (Enler/Karşılaştırma) ve favori satırı */
@@ -1484,4 +1533,24 @@ a.btn:hover {
   text-align: center;
   border-top: 1.5px solid var(--border);
   padding-top: 16px;
+}
+
+/* Mobil ince ayar — base kurallardan SONRA gelmeli ki override etsin */
+@media (max-width: 640px) {
+  .app-header {
+    gap: 10px;
+  }
+  .app-header h1 {
+    font-size: 23px;
+  }
+  .clock-time {
+    font-size: 17px;
+  }
+  .tagline {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .kv {
+    grid-template-columns: auto 1fr; /* dar ekranda 2 sütun (etiket/değer) */
+  }
 }
