@@ -30,7 +30,6 @@ type ViewId =
 
 const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'overview', label: 'Günün Özeti', Icon: IconHome },
-  { id: 'ai', label: 'AI Analiz', Icon: IconAi },
   { id: 'favorites', label: 'Favorilerim', Icon: IconStar },
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
@@ -43,6 +42,7 @@ const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'world', label: 'Dünya Borsaları', Icon: IconWorld },
   { id: 'reminders', label: 'Vade & Hatırlatma', Icon: IconBell },
   { id: 'alarms', label: 'Fiyat Alarmı', Icon: IconAlarm },
+  { id: 'ai', label: 'AI Analiz', Icon: IconAi },
 ]
 
 export default function App() {

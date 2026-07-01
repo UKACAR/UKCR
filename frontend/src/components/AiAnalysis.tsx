@@ -69,6 +69,34 @@ export default function AiAnalysis() {
               <p>{r.ozet}</p>
             </div>
 
+            {r.gunun_rakamlari?.length > 0 && (
+              <>
+                <h3 className="ai-h">📊 Günün Rakamları</h3>
+                <div className="ai-nums">
+                  {r.gunun_rakamlari.map((n, i) => (
+                    <div key={i} className="ai-num">
+                      <div className="ai-num-lbl">{n.etiket}</div>
+                      <div className="ai-num-val">{n.deger}</div>
+                      {n.degisim && n.degisim !== '—' && (
+                        <div className={`ai-num-chg ${meta(n.hava).cls}`}>
+                          <span>{n.degisim}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {r.temalar?.length > 0 && (
+              <div className="ai-themes">
+                {r.temalar.map((t, i) => (
+                  <span key={i} className="ai-theme">💡 {t}</span>
+                ))}
+              </div>
+            )}
+
+            <h3 className="ai-h">🧭 Bölüm Bölüm</h3>
             <div className="ai-grid">
               {r.bolumler.map((b, i) => (
                 <div key={i} className={`ai-section ${meta(b.hava).cls}`}>
@@ -77,35 +105,55 @@ export default function AiAnalysis() {
                     <span className="ai-sent-tag">{meta(b.hava).icon}</span>
                   </div>
                   <p>{b.yorum}</p>
+                  {b.one_cikanlar?.length > 0 && (
+                    <ul className="ai-sub">
+                      {b.one_cikanlar.map((x, j) => (
+                        <li key={j}>{x}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>
 
+            <div className="card ac-blue ai-inner">
+              <h3>📰 Öne Çıkan Haberler</h3>
+              {r.one_cikan_haberler.length === 0 ? (
+                <p className="muted small">—</p>
+              ) : (
+                <ul className="ai-news">
+                  {r.one_cikan_haberler.map((h, i) => (
+                    <li key={i}>
+                      <span className="ai-news-t">{h.baslik}</span>
+                      {h.etki && <span className="ai-news-e"> — {h.etki}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="overview-cols">
-              <div className="card ac-blue">
-                <h3>📰 Öne Çıkan Haberler</h3>
-                {r.one_cikan_haberler.length === 0 ? (
-                  <p className="muted small">—</p>
-                ) : (
-                  <ul className="ai-list">
-                    {r.one_cikan_haberler.map((h, i) => (
-                      <li key={i}>{h}</li>
-                    ))}
-                  </ul>
-                )}
+              <div className="card ac-red ai-inner">
+                <h3>⚠ Riskler</h3>
+                <ul className="ai-list">
+                  {r.riskler.map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                </ul>
               </div>
-              <div className="card ac-red">
-                <h3>⚠ Dikkat / Riskler</h3>
-                {r.riskler.length === 0 ? (
-                  <p className="muted small">—</p>
-                ) : (
-                  <ul className="ai-list">
-                    {r.riskler.map((x, i) => (
-                      <li key={i}>{x}</li>
-                    ))}
-                  </ul>
-                )}
+              <div className="card ac-green ai-inner">
+                <h3>✦ Fırsatlar / Takip</h3>
+                <ul className="ai-list">
+                  {r.firsatlar.map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                </ul>
               </div>
+            </div>
+
+            <div className="card ac-teal ai-inner">
+              <h3>🔭 Kısa Vade Beklenti</h3>
+              <p className="ai-beklenti">{r.beklenti}</p>
             </div>
 
             <div className="ai-close">
@@ -115,7 +163,7 @@ export default function AiAnalysis() {
             <p className="muted small">
               Bu içerik piyasa verilerinin bir sentezidir, <b>yatırım tavsiyesi değildir</b>.
               {r.mode === 'kural' &&
-                ' AI yorumu için backend/.env içine ANTHROPIC_API_KEY ekleyin.'}{' '}
+                ' Daha derin AI yorumu için backend/.env içine ANTHROPIC_API_KEY ekleyin.'}{' '}
               Her gün otomatik yenilenir.
             </p>
           </>

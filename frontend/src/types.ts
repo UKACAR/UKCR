@@ -182,18 +182,35 @@ export interface BoardMovers {
 
 export type Sentiment = 'pozitif' | 'negatif' | 'karışık' | 'nötr'
 
+export interface AiNum {
+  etiket: string
+  deger: string
+  degisim: string
+  hava: Sentiment
+}
+
 export interface AiReportSection {
   baslik: string
   yorum: string
   hava: Sentiment
+  one_cikanlar: string[]
+}
+
+export interface AiHaber {
+  baslik: string
+  etki: string
 }
 
 export interface AiReportBody {
   ozet: string
   genel_hava: Sentiment
+  gunun_rakamlari: AiNum[]
   bolumler: AiReportSection[]
-  one_cikan_haberler: string[]
+  temalar: string[]
+  one_cikan_haberler: AiHaber[]
   riskler: string[]
+  firsatlar: string[]
+  beklenti: string
   kapanis: string
   mode: 'ai' | 'kural'
   model?: string | null
