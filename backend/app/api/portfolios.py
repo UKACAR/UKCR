@@ -22,6 +22,7 @@ from app.schemas import (
     TransactionOut,
 )
 from app.services import csvio
+from app.services.performance import portfolio_performance
 from app.services.returns import portfolio_summary
 
 router = APIRouter(prefix="/api/portfolios", tags=["portfolios"])
@@ -132,6 +133,18 @@ def summary(
 ):
     p = _owned_portfolio(db, user, portfolio_id)
     return SummaryOut.model_validate(portfolio_summary(db, p.id))
+
+
+@router.get("/{portfolio_id}/performance")
+def performance(
+    portfolio_id: int,
+    months: int = 6,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Günlük değer/kar-zarar tablosu (son `months` ay) + dönem getirileri (TWR)."""
+    p = _owned_portfolio(db, user, portfolio_id)
+    return portfolio_performance(db, p.id, table_months=months)
 
 
 def _csv_response(text: str, filename: str) -> Response:

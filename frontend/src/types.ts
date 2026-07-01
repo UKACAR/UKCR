@@ -243,6 +243,25 @@ export interface CompareResponse {
   chart: Record<string, number | string>[]
 }
 
+export interface PerfDay {
+  date: string
+  value: number
+  pl: number
+  pl_pct: number
+}
+
+export interface PortfolioPerformance {
+  mode: 'actual' | 'backtest' | 'none'
+  daily: PerfDay[]
+  returns: {
+    week: number | null
+    m1: number | null
+    m3: number | null
+    m6: number | null
+    y1: number | null
+  }
+}
+
 export interface Summary {
   as_of: string
   total_invested: number

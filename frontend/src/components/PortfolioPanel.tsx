@@ -12,6 +12,7 @@ import {
 import type { Summary, TransactionCreate } from '../types'
 import { num, pct, tl } from '../format'
 import ImportExport from './ImportExport'
+import PortfolioPerformance from './PortfolioPerformance'
 
 const STORAGE_KEY = 'ukcr.portfolio.selectedId'
 
@@ -145,6 +146,8 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
       </div>
 
       {pid != null && <SummaryCards data={summaryQ.data} loading={summaryQ.isLoading} />}
+
+      {pid != null && <PortfolioPerformance pid={pid} />}
 
       <div className="card ac-green">
         <h2>İşlem Ekle</h2>

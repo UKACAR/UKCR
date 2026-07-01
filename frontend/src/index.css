@@ -1535,6 +1535,91 @@ a.btn:hover {
   padding-top: 16px;
 }
 
+/* Portföy günlük K/Z + dönem getirileri */
+.perf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.perf-grid {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 18px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+.perf-table {
+  max-height: 430px;
+  overflow-y: auto;
+}
+
+.perf-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.perf-returns {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.perf-returns-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.perf-returns-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.perf-returns-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 7px;
+}
+
+.perf-returns-list li:last-child {
+  border-bottom: none;
+}
+
+.prl-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.prl-val {
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .perf-grid {
+    grid-template-columns: 1fr;
+  }
+  .perf-table {
+    max-height: 340px;
+  }
+}
+
 /* Mobil ince ayar — base kurallardan SONRA gelmeli ki override etsin */
 @media (max-width: 640px) {
   .app-header {

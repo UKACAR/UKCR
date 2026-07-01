@@ -15,6 +15,7 @@ import type {
   NewsItem,
   Overview,
   Portfolio,
+  PortfolioPerformance,
   PricePoint,
   Reminder,
   ReminderCreate,
@@ -63,6 +64,11 @@ export const deleteTransaction = (pid: number, txId: number) =>
 
 export const getSummary = (pid: number) =>
   http.get<Summary>(`/portfolios/${pid}/summary`).then((r) => r.data)
+
+export const getPortfolioPerformance = (pid: number, months = 6) =>
+  http
+    .get<PortfolioPerformance>(`/portfolios/${pid}/performance`, { params: { months } })
+    .then((r) => r.data)
 
 export const compareFunds = (codes: string[], periodDays = 365) =>
   http
