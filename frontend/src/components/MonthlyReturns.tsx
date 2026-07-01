@@ -24,7 +24,8 @@ export default function MonthlyReturns({ code }: { code: string }) {
     queryFn: () => getFundMonthlyReturns(code, 3, real),
   })
 
-  const rows = q.data?.rows ?? []
+  // En üstte en güncel yıl (2026), aşağı doğru azalarak.
+  const rows = [...(q.data?.rows ?? [])].sort((a, b) => b.year - a.year)
 
   return (
     <div className="monthly">

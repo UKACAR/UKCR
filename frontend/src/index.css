@@ -1051,6 +1051,14 @@ a.btn:hover {
   box-shadow: var(--shadow);
 }
 
+/* Günlük değişime göre sol kenar: artı yeşil, eksi kırmızı */
+.ticker.up {
+  border-left: 4px solid var(--pos);
+}
+.ticker.down {
+  border-left: 4px solid var(--neg);
+}
+
 .ticker-label {
   font-size: 12px;
   color: var(--muted);
@@ -1701,6 +1709,158 @@ a.btn:hover {
 .metal-detail b {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* Dünya borsaları istatistik şeridi */
+.board-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+}
+.board-stats .bs-up {
+  color: var(--pos);
+  font-weight: 700;
+}
+.board-stats .bs-down {
+  color: var(--neg);
+  font-weight: 700;
+}
+.board-stats .bs-flat {
+  color: var(--muted);
+  font-weight: 600;
+}
+.board-stats .bs-sep {
+  color: var(--border);
+}
+
+/* AI Analiz sayfası */
+.ai-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ai-title {
+  margin: 0 0 2px;
+}
+.ai-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ai-badge-ai {
+  background: rgba(47, 111, 235, 0.15);
+  color: var(--accent-2, #2f6feb);
+}
+.ai-badge-rule {
+  background: var(--border);
+  color: var(--muted);
+}
+.ai-note {
+  color: var(--neg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ai-summary {
+  border: 1.5px solid var(--border);
+  border-left-width: 5px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 14px 0;
+  background: var(--surface);
+}
+.ai-summary p {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.ai-sent-chip {
+  font-weight: 800;
+  font-size: 13px;
+}
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ai-section {
+  border: 1.5px solid var(--border);
+  border-left-width: 5px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+}
+.ai-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.ai-section p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.ai-sent-tag {
+  font-size: 13px;
+}
+.ai-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.ai-list li {
+  margin: 4px 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.ai-close {
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 14px 0 6px;
+  background: rgba(127, 119, 221, 0.1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* Duygu renkleri (pozitif/negatif/karışık/nötr) */
+.sent-pos {
+  border-left-color: var(--pos);
+}
+.sent-pos .ai-sent-chip,
+.sent-pos .ai-sent-tag {
+  color: var(--pos);
+}
+.sent-neg {
+  border-left-color: var(--neg);
+}
+.sent-neg .ai-sent-chip,
+.sent-neg .ai-sent-tag {
+  color: var(--neg);
+}
+.sent-mix {
+  border-left-color: var(--ac-amber);
+}
+.sent-mix .ai-sent-chip,
+.sent-mix .ai-sent-tag {
+  color: var(--ac-amber);
+}
+.sent-neu {
+  border-left-color: var(--muted);
+}
+.sent-neu .ai-sent-chip,
+.sent-neu .ai-sent-tag {
+  color: var(--muted);
 }
 
 /* Günün enleri (movers): 3 tablo */

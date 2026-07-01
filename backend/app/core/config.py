@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     enable_scheduler: bool = False  # True ise FastAPI açılışında devreye girer
     daily_update_hour: int = 20  # TEFAS NAV'ları akşam yayınlar
 
+    # AI Analiz (Anthropic). Anahtar yoksa veriye dayalı kural bazlı rapor üretilir.
+    anthropic_api_key: str | None = None
+    ai_model: str = "claude-opus-4-8"
+    ai_report_hour: int = 10  # her gün bu saatte otomatik yenilenir
+
 
 @lru_cache
 def get_settings() -> Settings:

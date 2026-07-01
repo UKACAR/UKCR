@@ -75,6 +75,18 @@ def _job() -> None:
     print(f"[{datetime.now():%Y-%m-%d %H:%M}] Günlük güncelleme: {res}")
 
 
+def _ai_job() -> None:
+    """AI günlük piyasa raporunu yeniden üretir (her gün ai_report_hour'da)."""
+    from app.services import ai_report
+
+    try:
+        with SessionLocal() as db:
+            ai_report.generate(db)
+        print(f"[{datetime.now():%Y-%m-%d %H:%M}] AI raporu güncellendi.")
+    except Exception as e:  # noqa: BLE001
+        print(f"[{datetime.now():%Y-%m-%d %H:%M}] AI raporu hatası: {type(e).__name__}")
+
+
 def start_scheduler():
     """FastAPI içinde arka planda çalışan zamanlayıcı (handle döndürür)."""
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -83,6 +95,10 @@ def start_scheduler():
     scheduler.add_job(
         _job, "cron", hour=settings.daily_update_hour, minute=0,
         id="daily_update", replace_existing=True,
+    )
+    scheduler.add_job(
+        _ai_job, "cron", hour=settings.ai_report_hour, minute=0,
+        id="ai_report", replace_existing=True,
     )
     scheduler.start()
     return scheduler

@@ -28,12 +28,14 @@ export default function MarketBoard({
   newsTitle,
   note,
   moversBoard,
+  showStats,
 }: {
   board: string
   newsTopic: string
   newsTitle: string
   note?: string
   moversBoard?: string
+  showStats?: boolean
 }) {
   const [range, setRange] = useState('6mo')
   const [selected, setSelected] = useState<string | null>(null)
@@ -58,6 +60,21 @@ export default function MarketBoard({
     enabled: !!sel,
   })
   const pts = chartQ.data ?? []
+
+  // İstatistik şeridi (Dünya borsaları): kaç kalem yükselmiş/düşmüş, ortalama, en iyi/kötü.
+  const withChg = items.filter((i) => i.change != null)
+  const up = withChg.filter((i) => (i.change as number) > 0)
+  const down = withChg.filter((i) => (i.change as number) < 0)
+  const flat = withChg.length - up.length - down.length
+  const avg = withChg.length
+    ? withChg.reduce((s, i) => s + (i.change as number), 0) / withChg.length
+    : null
+  const best = withChg.length
+    ? withChg.reduce((a, b) => ((a.change as number) >= (b.change as number) ? a : b))
+    : null
+  const worst = withChg.length
+    ? withChg.reduce((a, b) => ((a.change as number) <= (b.change as number) ? a : b))
+    : null
 
   return (
     <div className="stack">
@@ -84,6 +101,30 @@ export default function MarketBoard({
           <p className="muted small">Veri alınamadı.</p>
         )}
       </div>
+
+      {showStats && withChg.length > 0 && (
+        <div className="board-stats">
+          <span className="bs-up">🟢 {up.length} yükselen</span>
+          <span className="bs-down">🔴 {down.length} düşen</span>
+          {flat > 0 && <span className="bs-flat">⚪ {flat} yatay</span>}
+          <span className="bs-sep">·</span>
+          <span>
+            Ortalama <b className={cls(avg)}>{pct(avg)}</b>
+          </span>
+          {best && (
+            <span>
+              En iyi <b>{best.label}</b>{' '}
+              <span className={cls(best.change)}>{pct(best.change)}</span>
+            </span>
+          )}
+          {worst && (
+            <span>
+              En kötü <b>{worst.label}</b>{' '}
+              <span className={cls(worst.change)}>{pct(worst.change)}</span>
+            </span>
+          )}
+        </div>
+      )}
 
       {note && <p className="muted small">{note}</p>}
 

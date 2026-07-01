@@ -124,7 +124,10 @@ export default function Overview({
       {/* Piyasa şeridi */}
       <div className="ticker-row">
         {overviewQ.data?.market.map((m) => (
-          <div className="ticker" key={m.label}>
+          <div
+            className={`ticker ${m.change == null ? '' : m.change >= 0 ? 'up' : 'down'}`}
+            key={m.label}
+          >
             <div className="ticker-label">{m.label}</div>
             <div className="ticker-value">{num(m.value, 2)}</div>
             {m.change != null && (

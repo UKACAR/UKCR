@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Price
 from app.db.session import get_db
 from app.schemas import IndexPoint, MoversOut, NewsItem, OverviewOut
-from app.services import market, news, overview
+from app.services import ai_report, market, news, overview
 
 router = APIRouter(prefix="/api", tags=["overview"])
 
@@ -60,3 +60,15 @@ def get_board(name: str):
 def get_board_movers(name: str):
     """Günün enleri (bist / crypto): en çok yükselen / düşen / işlem gören."""
     return market.board_movers(name)
+
+
+@router.get("/ai-report")
+def get_ai_report(db: Session = Depends(get_db)):
+    """Günlük AI piyasa değerlendirme raporu (anahtar yoksa kural bazlı)."""
+    return ai_report.get_report(db)
+
+
+@router.post("/ai-report/refresh")
+def refresh_ai_report(db: Session = Depends(get_db)):
+    """Raporu anında yeniden üretir."""
+    return ai_report.get_report(db, force=True)

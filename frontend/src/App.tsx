@@ -10,9 +10,11 @@ import EtfMarket from './components/EtfMarket'
 import Reminders from './components/Reminders'
 import Alarms from './components/Alarms'
 import Overview from './components/Overview'
+import AiAnalysis from './components/AiAnalysis'
 
 type ViewId =
   | 'overview'
+  | 'ai'
   | 'favorites'
   | 'portfolio'
   | 'explore'
@@ -28,6 +30,7 @@ type ViewId =
 
 const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'overview', label: 'Günün Özeti', Icon: IconHome },
+  { id: 'ai', label: 'AI Analiz', Icon: IconAi },
   { id: 'favorites', label: 'Favorilerim', Icon: IconStar },
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
@@ -106,6 +109,7 @@ export default function App() {
           {view === 'overview' && (
             <Overview onGoPortfolio={() => setView('portfolio')} onOpenFund={openFund} />
           )}
+          {view === 'ai' && <AiAnalysis />}
           {view === 'favorites' && <Favorites onOpenFund={openFund} />}
           {view === 'portfolio' && <PortfolioPanel prefillCode={pickedCode} />}
           {view === 'explore' && (
@@ -149,6 +153,7 @@ export default function App() {
           {view === 'world' && (
             <MarketBoard
               board="world"
+              showStats
               newsTopic="world"
               newsTitle="Dünya Piyasa Haberleri"
               note="Küresel endeksler ~15 dk gecikmeli; farklı saat dilimleri nedeniyle bazıları kapalı olabilir."
@@ -198,6 +203,18 @@ const svg = {
   strokeWidth: 1.8,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
+}
+
+function IconAi() {
+  return (
+    <svg {...svg}>
+      <rect x="4" y="7" width="16" height="12" rx="2.5" />
+      <path d="M12 7V4M9 4h6" />
+      <circle cx="9" cy="13" r="1" />
+      <circle cx="15" cy="13" r="1" />
+      <path d="M2 12v2M22 12v2" />
+    </svg>
+  )
 }
 
 function IconHome() {

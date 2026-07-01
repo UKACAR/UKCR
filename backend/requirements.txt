@@ -9,3 +9,4 @@ pandas>=2.2              # zaman serisi / hesap
 apscheduler>=3.10        # gecelik veri çekme job'u
 python-dateutil>=2.9
 python-multipart>=0.0.9  # FastAPI dosya yükleme (CSV import)
+anthropic>=0.69

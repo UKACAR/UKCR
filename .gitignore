@@ -33,3 +33,6 @@ frontend/.vite/
 .idea/
 .DS_Store
 Thumbs.db
+
+# AI Analiz gunluk cache (uretilen)
+backend/ai_report_cache.json

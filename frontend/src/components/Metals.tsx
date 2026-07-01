@@ -47,7 +47,7 @@ export default function Metals() {
     <div className="stack">
       <div className="metals-grid">
         {metals.map((m) => {
-          const chg = m.try_change ?? m.usd_change
+          const chg = m.usd_change ?? m.try_change
           return (
           <button
             key={m.key}
@@ -58,32 +58,32 @@ export default function Metals() {
           >
             <div className="metal-name">{m.name}</div>
             <div className="metal-gram">
-              {m.gram ? tl(m.try_gram) : tl(m.try_price)}{' '}
-              <span className="metal-unit">/{m.gram ? 'gram' : m.unit}</span>
+              {usd(m.usd_price)}{' '}
+              <span className="metal-unit">/{m.gram ? 'ons' : m.unit}</span>
             </div>
-            {m.try_change != null && (
-              <div className={`metal-chg ${cls(m.try_change)}`}>{pct(m.try_change)}</div>
+            {m.usd_change != null && (
+              <div className={`metal-chg ${cls(m.usd_change)}`}>{pct(m.usd_change)}</div>
             )}
             <div className="metal-detail">
               {m.gram ? (
                 <>
-                  <span>USD/ons</span>
-                  <b>{usd(m.usd_price)}</b>
                   <span>USD/gram</span>
                   <b>{usd(m.usd_gram)}</b>
+                  <span>TL/gram</span>
+                  <b>{tl(m.try_gram)}</b>
                   <span>TL/ons</span>
                   <b>{tl(m.try_price)}</b>
-                  <span>USD değ.</span>
-                  <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
+                  <span>TL değ.</span>
+                  <b className={cls(m.try_change)}>{pct(m.try_change)}</b>
                 </>
               ) : (
                 <>
-                  <span>USD/{m.unit}</span>
-                  <b>{usd(m.usd_price)}</b>
                   <span>TL/{m.unit}</span>
                   <b>{tl(m.try_price)}</b>
                   <span>USD değ.</span>
                   <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
+                  <span>TL değ.</span>
+                  <b className={cls(m.try_change)}>{pct(m.try_change)}</b>
                 </>
               )}
             </div>

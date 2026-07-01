@@ -206,9 +206,21 @@ export default function FundCompare({ onOpenFund }: { onOpenFund?: (code: string
             </table>
           </div>
 
-          <div className="muted small chart-caption">Rebased NAV (başlangıç = 100)</div>
+          <div className="muted small chart-caption">
+            Başlangıca göre kümülatif % değişim (başlangıç = %0)
+          </div>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={q.data.chart} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+            <LineChart
+              data={q.data.chart.map((row) => {
+                const o: Record<string, number | string> = { date: row.date as string }
+                for (const f of q.data!.funds) {
+                  const v = row[f.code]
+                  o[f.code] = typeof v === 'number' ? Number((v - 100).toFixed(2)) : v
+                }
+                return o
+              })}
+              margin={{ top: 8, right: 12, bottom: 4, left: 4 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
                 dataKey="date"
@@ -217,8 +229,14 @@ export default function FundCompare({ onOpenFund }: { onOpenFund?: (code: string
                 fontSize={11}
                 stroke="var(--muted)"
               />
-              <YAxis domain={['auto', 'auto']} width={46} fontSize={11} stroke="var(--muted)" />
-              <Tooltip />
+              <YAxis
+                domain={['auto', 'auto']}
+                width={52}
+                fontSize={11}
+                stroke="var(--muted)"
+                tickFormatter={(v: number) => `%${v.toFixed(0)}`}
+              />
+              <Tooltip formatter={(v, name) => [`%${Number(v).toFixed(2)}`, name]} />
               <Legend />
               {q.data.funds.map((f, i) => (
                 <Line

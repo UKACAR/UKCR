@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type {
+  AiReport,
   Alarm,
   AlarmCreate,
   BoardData,
@@ -141,6 +142,11 @@ export const getBoard = (name: string) =>
 
 export const getBoardMovers = (name: string) =>
   http.get<BoardMovers>(`/board/${name}/movers`).then((r) => r.data)
+
+export const getAiReport = () => http.get<AiReport>('/ai-report').then((r) => r.data)
+
+export const refreshAiReport = () =>
+  http.post<AiReport>('/ai-report/refresh').then((r) => r.data)
 
 export const getMetals = () => http.get<MetalsData>('/metals').then((r) => r.data)
 

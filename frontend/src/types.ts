@@ -180,6 +180,32 @@ export interface BoardMovers {
   most_traded: MoverRow[]
 }
 
+export type Sentiment = 'pozitif' | 'negatif' | 'karışık' | 'nötr'
+
+export interface AiReportSection {
+  baslik: string
+  yorum: string
+  hava: Sentiment
+}
+
+export interface AiReportBody {
+  ozet: string
+  genel_hava: Sentiment
+  bolumler: AiReportSection[]
+  one_cikan_haberler: string[]
+  riskler: string[]
+  kapanis: string
+  mode: 'ai' | 'kural'
+  model?: string | null
+}
+
+export interface AiReport {
+  date: string
+  generated_at: string
+  report: AiReportBody
+  note?: string | null
+}
+
 export interface BoardItem {
   label: string
   symbol: string
