@@ -40,6 +40,7 @@ class PositionView:
     unrealized_pl: Decimal
     realized_pl: Decimal
     total_pl: Decimal
+    daily_pl: Decimal            # son NAV değişiminden bugünkü K/Z (adet × ΔNAV)
     estimated_stopaj: Decimal
 
 
@@ -51,6 +52,7 @@ class Summary:
     unrealized_pl: Decimal
     realized_pl: Decimal
     total_pl: Decimal
+    daily_pl: Decimal             # son işlem gününde portföyün K/Z'ı (adet × ΔNAV)
     simple_return: float | None   # kümülatif nominal getiri (total_pl / invested)
     xirr: float | None            # yıllık para-ağırlıklı getiri
     estimated_stopaj: Decimal
@@ -141,6 +143,7 @@ def summarize(
     instruments: dict[int, Instrument],
     price_map: dict[int, tuple[date, Decimal]],
     *,
+    prev_price_map: dict[int, Decimal] | None = None,
     db: Session | None = None,
     as_of: date | None = None,
     inflation: float | None = None,
@@ -150,12 +153,14 @@ def summarize(
         dates = [d for d, _ in price_map.values()]
         as_of = max(dates) if dates else date.today()
 
+    prev_price_map = prev_price_map or {}
     positions = build_positions(txs)
 
     total_value = _ZERO
     total_unreal = _ZERO
     total_real = _ZERO
     total_stopaj = _ZERO
+    total_daily = _ZERO
     views: list[PositionView] = []
 
     for iid, pos in positions.items():
@@ -163,6 +168,10 @@ def summarize(
         last_price = last[1] if last else _ZERO
         last_date = last[0] if last else None
         vp = value_position(pos, last_price, last_date)
+
+        # Günlük K/Z: net adet × (son NAV − önceki NAV)
+        prev_price = prev_price_map.get(iid)
+        daily_pl = vp.units * (last_price - prev_price) if (prev_price and last_price) else _ZERO
 
         inst = instruments.get(iid)
         stopaj = _ZERO
@@ -173,6 +182,7 @@ def summarize(
         total_unreal += vp.unrealized_pl
         total_real += vp.realized_pl
         total_stopaj += stopaj
+        total_daily += daily_pl
 
         views.append(
             PositionView(
@@ -187,6 +197,7 @@ def summarize(
                 unrealized_pl=vp.unrealized_pl,
                 realized_pl=vp.realized_pl,
                 total_pl=vp.total_pl,
+                daily_pl=daily_pl,
                 estimated_stopaj=stopaj,
             )
         )
@@ -214,6 +225,7 @@ def summarize(
         unrealized_pl=total_unreal,
         realized_pl=total_real,
         total_pl=total_pl,
+        daily_pl=total_daily,
         simple_return=simple_return,
         xirr=port_xirr,
         estimated_stopaj=total_stopaj,
@@ -245,16 +257,19 @@ def portfolio_summary(db: Session, portfolio_id: int, *, as_of: date | None = No
         for i in db.execute(select(Instrument).where(Instrument.id.in_(inst_ids))).scalars()
     }
     price_map: dict[int, tuple[date, Decimal]] = {}
+    prev_price_map: dict[int, Decimal] = {}
     for iid in inst_ids:
-        row = (
+        rows = (
             db.execute(
-                select(Price).where(Price.instrument_id == iid).order_by(Price.date.desc()).limit(1)
+                select(Price).where(Price.instrument_id == iid).order_by(Price.date.desc()).limit(2)
             )
             .scalars()
-            .first()
+            .all()
         )
-        if row:
-            price_map[iid] = (row.date, row.price)
+        if rows:
+            price_map[iid] = (rows[0].date, rows[0].price)
+            if len(rows) >= 2:
+                prev_price_map[iid] = rows[1].price
 
     if as_of is None:
         price_dates = [d for d, _ in price_map.values()]
@@ -264,7 +279,10 @@ def portfolio_summary(db: Session, portfolio_id: int, *, as_of: date | None = No
     if txs:
         inflation = evds.period_inflation(min(t.trade_date for t in txs), as_of)
 
-    return summarize(txs, instruments, price_map, db=db, as_of=as_of, inflation=inflation)
+    return summarize(
+        txs, instruments, price_map,
+        prev_price_map=prev_price_map, db=db, as_of=as_of, inflation=inflation,
+    )
 
 
 # --------------------------------------------------------------------------- #

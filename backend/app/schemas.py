@@ -206,6 +206,7 @@ class PositionOut(BaseModel):
     unrealized_pl: float
     realized_pl: float
     total_pl: float
+    daily_pl: float = 0.0
     estimated_stopaj: float
 
 
@@ -236,6 +237,7 @@ class SummaryOut(BaseModel):
     unrealized_pl: float
     realized_pl: float
     total_pl: float
+    daily_pl: float = 0.0
     simple_return: float | None = None
     xirr: float | None = None
     estimated_stopaj: float

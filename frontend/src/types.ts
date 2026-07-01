@@ -321,6 +321,7 @@ export interface Position {
   unrealized_pl: number
   realized_pl: number
   total_pl: number
+  daily_pl?: number
   estimated_stopaj: number
 }
 
@@ -372,6 +373,7 @@ export interface Summary {
   unrealized_pl: number
   realized_pl: number
   total_pl: number
+  daily_pl?: number
   simple_return?: number | null
   xirr?: number | null
   estimated_stopaj: number

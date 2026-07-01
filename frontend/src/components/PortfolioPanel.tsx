@@ -74,6 +74,8 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
     queryKey: ['summary', pid],
     queryFn: () => getSummary(pid as number),
     enabled: pid != null,
+    refetchInterval: 120_000, // güncel K/Z için periyodik tazele (yeni NAV yayınlanınca yansır)
+    refetchIntervalInBackground: true,
   })
   const txQ = useQuery({
     queryKey: ['transactions', pid],
@@ -287,6 +289,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
                   <th className="r">Ort. Maliyet</th>
                   <th className="r">Son NAV</th>
                   <th className="r">Değer</th>
+                  <th className="r">Günlük K/Z</th>
                   <th className="r">Gerç.olmayan K/Z</th>
                   <th className="r">Stopaj</th>
                 </tr>
@@ -309,6 +312,9 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
                     <td className="r">{num(p.avg_cost, 4)}</td>
                     <td className="r">{num(p.last_price, 4)}</td>
                     <td className="r">{tl(p.market_value)}</td>
+                    <td className={`r ${(p.daily_pl ?? 0) >= 0 ? 'pos' : 'neg'}`}>
+                      {tl(p.daily_pl ?? 0)}
+                    </td>
                     <td className={`r ${p.unrealized_pl >= 0 ? 'pos' : 'neg'}`}>
                       {tl(p.unrealized_pl)}
                     </td>
@@ -397,6 +403,13 @@ function SummaryCards({ data, loading }: { data?: Summary; loading: boolean }) {
     <div className="cards">
       <Metric label="Güncel Değer" value={tl(data.current_value)} accent="var(--ac-blue)" />
       <Metric label="Toplam K/Z" value={tl(data.total_pl)} cls={plClass} accent="var(--ac-green)" />
+      <Metric
+        label="Günlük K/Z"
+        value={tl(data.daily_pl ?? 0)}
+        cls={(data.daily_pl ?? 0) >= 0 ? 'pos' : 'neg'}
+        accent="var(--ac-amber)"
+        hint="Son yayınlanan NAV değişimine göre (adet × NAV farkı). TEFAS fonları günde bir fiyatlanır; akşam yeni NAV yayınlanınca güncellenir."
+      />
       <Metric
         label="Kümülatif Getiri"
         value={pct(data.simple_return)}
