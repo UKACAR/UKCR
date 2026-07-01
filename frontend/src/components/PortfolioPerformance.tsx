@@ -25,7 +25,17 @@ export default function PortfolioPerformance({ pid }: { pid: number }) {
 
   if (q.isLoading) return <div className="card ac-purple muted">Performans hesaplanıyor…</div>
   const data = q.data
-  if (!data || data.daily.length === 0) return null
+  if (!data || data.daily.length === 0) {
+    return (
+      <div className="card ac-purple">
+        <h2>Günlük Kâr/Zarar</h2>
+        <p className="muted">
+          Bu portföyde işlem yok. Günlük kâr/zarar tablosu ve dönem getirileri için işlem ekleyin
+          (ya da yukarıdan işlemi olan bir portföy seçin).
+        </p>
+      </div>
+    )
+  }
 
   const rows = [...data.daily].reverse() // en yeni üstte
 
