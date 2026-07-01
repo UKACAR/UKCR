@@ -14,6 +14,7 @@ from app.ingestion import store
 from app.schemas import FundDetail, FundListItem, PriceOut, ValorUpdate
 from app.services import valor
 from app.services.allocation import get_allocation
+from app.services.holdings import fund_holdings
 
 router = APIRouter(prefix="/api/funds", tags=["funds"])
 
@@ -164,6 +165,12 @@ def fund_monthly_returns(
     if inst is None:
         raise HTTPException(status_code=404, detail=f"Fon bulunamadı: {code.upper()}")
     return {"code": code.upper(), "real": real, "rows": _monthly_returns(db, inst.id, years, real=real)}
+
+
+@router.get("/{code}/holdings")
+def fund_holdings_ep(code: str, db: Session = Depends(get_db)):
+    """Fonun hisse bazlı dökümü (resmî aylık portföy raporundan) + gösterge içerik."""
+    return fund_holdings(db, code)
 
 
 @router.get("/{code}/allocation")

@@ -10,6 +10,7 @@ import type {
   FavoriteCreate,
   FundAllocation,
   FundDetail,
+  FundHoldings,
   MonthlyReturns,
   FundListItem,
   ImportResult,
@@ -48,6 +49,9 @@ export const getFundPrices = (code: string, period = 12) =>
 
 export const getFundAllocation = (code: string) =>
   http.get<FundAllocation>(`/funds/${code}/allocation`).then((r) => r.data)
+
+export const getFundHoldings = (code: string) =>
+  http.get<FundHoldings>(`/funds/${code}/holdings`).then((r) => r.data)
 
 export const getFundMonthlyReturns = (code: string, years = 3, real = false) =>
   http

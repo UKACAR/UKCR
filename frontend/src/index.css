@@ -1378,6 +1378,56 @@ a.btn:hover {
   padding-top: 14px;
 }
 
+/* Hisse detayı (fon portföy raporundan) */
+.holdings {
+  margin-top: 16px;
+  border-top: 1px dashed var(--border);
+  padding-top: 12px;
+}
+.holdings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.holdings-table th,
+.holdings-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.holdings-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+.holdings-table td.r,
+.holdings-table th.r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hold-badge {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ac-purple, #7f77dd);
+  background: rgba(127, 119, 221, 0.12);
+  padding: 1px 6px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.holdings-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 8px 0;
+}
+.hold-chip {
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--surface);
+}
+
 .alloc-head {
   display: flex;
   align-items: baseline;

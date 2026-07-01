@@ -325,6 +325,35 @@ export interface Position {
   estimated_stopaj: number
 }
 
+export interface HoldingItem {
+  code: string
+  name: string
+  pct: number
+  value: number
+  foreign: boolean
+}
+
+export interface IndexHolding {
+  code: string
+  name: string
+  price: number
+  change: number | null
+}
+
+export interface FundHoldings {
+  code: string
+  title: string | null
+  as_of: string | null
+  source_url: string | null
+  report_url: string | null
+  parsed: boolean
+  count: number
+  holdings: HoldingItem[]
+  index_name: string | null
+  index_holdings: IndexHolding[] | null
+  note: string | null
+}
+
 export interface LiveEstimatePos {
   code: string
   title: string

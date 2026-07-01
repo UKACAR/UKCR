@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getFundAllocation } from '../api'
+import FundHoldings from './FundHoldings'
 
 const fmtDate = (iso: string) => {
   const [y, m, d] = iso.split('-')
@@ -86,6 +87,8 @@ export default function FundAllocation({ code }: { code: string }) {
           </div>
         </div>
       )}
+
+      <FundHoldings code={code} />
     </div>
   )
 }
