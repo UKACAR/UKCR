@@ -136,9 +136,10 @@ export default function App() {
             <MarketBoard
               board="crypto"
               moversBoard="crypto"
+              usdPrimary
               newsTopic="crypto"
               newsTitle="Kripto Haberleri"
-              note="USD ve TL (güncel kur ile) · ~15 dk gecikmeli."
+              note="Fiyatlar USD; yanında TL karşılığı (güncel kur ile) · ~15 dk gecikmeli."
             />
           )}
           {view === 'etf' && <EtfMarket onOpenFund={openFund} />}

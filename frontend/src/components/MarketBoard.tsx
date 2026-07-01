@@ -29,6 +29,7 @@ export default function MarketBoard({
   note,
   moversBoard,
   showStats,
+  usdPrimary,
 }: {
   board: string
   newsTopic: string
@@ -36,6 +37,7 @@ export default function MarketBoard({
   note?: string
   moversBoard?: string
   showStats?: boolean
+  usdPrimary?: boolean // USD ana değer, TL ikincil (kripto)
 }) {
   const [range, setRange] = useState('6mo')
   const [selected, setSelected] = useState<string | null>(null)
@@ -89,8 +91,21 @@ export default function MarketBoard({
           >
             <div className="metal-name">{it.label}</div>
             <div className="metal-gram">
-              {it.try_value != null ? tl(it.try_value) : num(it.value, 2)}
-              {it.try_value != null && <span className="metal-unit"> ${num(it.value, 2)}</span>}
+              {usdPrimary ? (
+                <>
+                  ${num(it.value, 2)}
+                  {it.try_value != null && (
+                    <span className="metal-unit"> {tl(it.try_value)}</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  {it.try_value != null ? tl(it.try_value) : num(it.value, 2)}
+                  {it.try_value != null && (
+                    <span className="metal-unit"> ${num(it.value, 2)}</span>
+                  )}
+                </>
+              )}
             </div>
             {it.change != null && (
               <div className={`metal-chg ${cls(it.change)}`}>{pct(it.change)}</div>
@@ -135,7 +150,11 @@ export default function MarketBoard({
               {sel?.label ?? '—'}{' '}
               {sel && (
                 <span className="bist-val">
-                  {sel.try_value != null ? tl(sel.try_value) : num(sel.value, 2)}
+                  {usdPrimary
+                    ? `$${num(sel.value, 2)}`
+                    : sel.try_value != null
+                      ? tl(sel.try_value)
+                      : num(sel.value, 2)}
                 </span>
               )}{' '}
               {sel?.change != null && (
