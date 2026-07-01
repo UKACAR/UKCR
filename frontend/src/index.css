@@ -478,6 +478,65 @@ body {
   color: var(--muted);
 }
 
+/* Tahmini anlık K/Z paneli */
+.live-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.live-title {
+  margin: 0 0 2px;
+}
+.live-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(127, 119, 221, 0.15);
+  color: var(--ac-purple, #7f77dd);
+  padding: 1px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.live-figs {
+  text-align: right;
+}
+.live-pl {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  display: block;
+}
+.live-pct {
+  font-size: 13px;
+  font-weight: 700;
+}
+.live-proxies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+.live-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.live-table th,
+.live-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.live-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .pos {
   color: var(--pos);
 }

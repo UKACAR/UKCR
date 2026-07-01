@@ -23,6 +23,7 @@ from app.schemas import (
     TransactionUpdate,
 )
 from app.services import csvio
+from app.services.live_estimate import portfolio_live_estimate
 from app.services.performance import portfolio_performance
 from app.services.returns import portfolio_summary
 
@@ -176,6 +177,17 @@ def performance(
     """Günlük değer/kar-zarar tablosu (son `months` ay) + dönem getirileri (TWR)."""
     p = _owned_portfolio(db, user, portfolio_id)
     return portfolio_performance(db, p.id, table_months=months)
+
+
+@router.get("/{portfolio_id}/live-estimate")
+def live_estimate(
+    portfolio_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """TAHMİNİ anlık K/Z: fon dağılımı × dayanak endekslerin gün içi hareketi (gösterge)."""
+    p = _owned_portfolio(db, user, portfolio_id)
+    return portfolio_live_estimate(db, p.id)
 
 
 def _csv_response(text: str, filename: str) -> Response:

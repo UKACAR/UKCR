@@ -325,6 +325,28 @@ export interface Position {
   estimated_stopaj: number
 }
 
+export interface LiveEstimatePos {
+  code: string
+  title: string
+  market_value: number
+  est_return: number | null
+  est_pl: number | null
+  covered: boolean
+  as_of?: string | null
+}
+
+export interface LiveEstimate {
+  as_of?: string | null
+  estimated_pl: number
+  estimated_pct: number | null
+  current_value: number
+  estimated_value: number
+  covered_value: number
+  uncovered_value: number
+  proxies: Record<string, number>
+  positions: LiveEstimatePos[]
+}
+
 export interface CompareMetrics {
   code: string
   title: string

@@ -14,6 +14,7 @@ import type {
   FundListItem,
   ImportResult,
   IndexPoint,
+  LiveEstimate,
   MetalsData,
   Movers,
   NewsItem,
@@ -77,6 +78,9 @@ export const getPortfolioPerformance = (pid: number, months = 6) =>
   http
     .get<PortfolioPerformance>(`/portfolios/${pid}/performance`, { params: { months } })
     .then((r) => r.data)
+
+export const getLiveEstimate = (pid: number) =>
+  http.get<LiveEstimate>(`/portfolios/${pid}/live-estimate`).then((r) => r.data)
 
 export const compareFunds = (codes: string[], periodDays = 365) =>
   http

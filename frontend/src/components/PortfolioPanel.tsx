@@ -5,12 +5,13 @@ import {
   addTransaction,
   createPortfolio,
   deleteTransaction,
+  getLiveEstimate,
   getSummary,
   listPortfolios,
   listTransactions,
   updateTransaction,
 } from '../api'
-import type { Summary, Transaction, TransactionCreate } from '../types'
+import type { LiveEstimate, Summary, Transaction, TransactionCreate } from '../types'
 import { num, pct, tl } from '../format'
 import ImportExport from './ImportExport'
 import PortfolioPerformance from './PortfolioPerformance'
@@ -75,6 +76,13 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
     queryFn: () => getSummary(pid as number),
     enabled: pid != null,
     refetchInterval: 120_000, // güncel K/Z için periyodik tazele (yeni NAV yayınlanınca yansır)
+    refetchIntervalInBackground: true,
+  })
+  const liveQ = useQuery({
+    queryKey: ['liveEstimate', pid],
+    queryFn: () => getLiveEstimate(pid as number),
+    enabled: pid != null,
+    refetchInterval: 60_000, // dayanak endeksler gün içi hareket ettikçe tazele
     refetchIntervalInBackground: true,
   })
   const txQ = useQuery({
@@ -203,6 +211,8 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
       </div>
 
       {pid != null && <SummaryCards data={summaryQ.data} loading={summaryQ.isLoading} />}
+
+      {pid != null && liveQ.data && <LiveEstimateCard data={liveQ.data} />}
 
       {pid != null && <PortfolioPerformance pid={pid} />}
 
@@ -458,6 +468,82 @@ function Metric({
       <div className="metric-label">{label}</div>
       <div className={`metric-value ${cls ?? ''} ${muted ? 'muted' : ''}`}>{value}</div>
       {hint && <div className="metric-hint">{hint}</div>}
+    </div>
+  )
+}
+
+const PROXY_LABEL: Record<string, string> = {
+  bist: 'BİST 100',
+  soxx: 'ABD Yarı İletken',
+  nasdaq: 'Nasdaq',
+  sp: 'S&P 500',
+  usdtry: 'USD/TL',
+}
+const sgn = (v?: number | null) => (v == null ? '' : v >= 0 ? 'pos' : 'neg')
+
+function LiveEstimateCard({ data }: { data: LiveEstimate }) {
+  const cls = sgn(data.estimated_pl)
+  return (
+    <div className="card ac-purple">
+      <div className="live-head">
+        <div>
+          <h2 className="live-title">
+            ⚡ Tahmini Anlık K/Z <span className="live-badge">gösterge</span>
+          </h2>
+          <div className="muted small">
+            Fon dağılımı × dayanak endekslerin gün içi hareketi · ~60 sn'de bir tazelenir
+          </div>
+        </div>
+        <div className="live-figs">
+          <b className={`live-pl ${cls}`}>{tl(data.estimated_pl)}</b>
+          {data.estimated_pct != null && (
+            <span className={`live-pct ${cls}`}>{pct(data.estimated_pct)}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="live-proxies">
+        {Object.entries(data.proxies).map(([k, v]) => (
+          <span key={k} className="live-proxy">
+            {PROXY_LABEL[k] ?? k} <b className={sgn(v)}>{pct(v)}</b>
+          </span>
+        ))}
+      </div>
+
+      <div className="table-wrap">
+        <table className="live-table">
+          <thead>
+            <tr>
+              <th>Fon</th>
+              <th className="r">Değer</th>
+              <th className="r">Tahmini %</th>
+              <th className="r">Tahmini K/Z</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.positions.map((p) => (
+              <tr key={p.code}>
+                <td>
+                  <b>{p.code}</b>
+                  <div className="muted small">{p.title}</div>
+                </td>
+                <td className="r">{tl(p.market_value)}</td>
+                <td className={`r ${sgn(p.est_return)}`}>
+                  {p.est_return == null ? '—' : pct(p.est_return)}
+                </td>
+                <td className={`r ${sgn(p.est_pl)}`}>{p.est_pl == null ? '—' : tl(p.est_pl)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="muted small">
+        Bu bir <b>TAHMİNDİR</b>, resmî NAV değildir. TEFAS fonları günde bir kez fiyatlanır;
+        yurt içi hisse BİST 100, yabancı (yarı iletken) hisse ise ABD endeksi + USD/TL ile
+        yaklaşık hesaplanır. Yabancı hisseler ABD borsası açıkken (öğleden sonra) hareket eder.
+        {data.uncovered_value > 0 && ' Dağılımı çekilemeyen fonlar tahmine dahil değildir.'}
+      </p>
     </div>
   )
 }
