@@ -377,5 +377,6 @@ export interface Summary {
   estimated_stopaj: number
   net_value: number
   real_return?: number | null
+  xirr_note?: string | null
   positions: Position[]
 }

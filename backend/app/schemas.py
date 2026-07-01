@@ -241,4 +241,5 @@ class SummaryOut(BaseModel):
     estimated_stopaj: float
     net_value: float
     real_return: float | None = None
+    xirr_note: str | None = None
     positions: list[PositionOut] = []

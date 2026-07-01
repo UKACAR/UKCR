@@ -403,7 +403,12 @@ function SummaryCards({ data, loading }: { data?: Summary; loading: boolean }) {
         cls={plClass}
         accent="var(--ac-teal)"
       />
-      <Metric label="XIRR (yıllık)" value={pct(data.xirr)} accent="var(--ac-purple)" />
+      <Metric
+        label="XIRR (yıllık)"
+        value={pct(data.xirr)}
+        accent="var(--ac-purple)"
+        hint={data.xirr == null ? data.xirr_note ?? undefined : undefined}
+      />
       <Metric
         label="Reel Getiri"
         value={data.real_return == null ? 'EVDS gerekli' : pct(data.real_return)}
@@ -422,17 +427,24 @@ function Metric({
   cls,
   muted,
   accent,
+  hint,
 }: {
   label: string
   value: string
   cls?: string
   muted?: boolean
   accent?: string
+  hint?: string
 }) {
   return (
-    <div className="metric" style={accent ? { borderTopColor: accent } : undefined}>
+    <div
+      className="metric"
+      style={accent ? { borderTopColor: accent } : undefined}
+      title={hint || undefined}
+    >
       <div className="metric-label">{label}</div>
       <div className={`metric-value ${cls ?? ''} ${muted ? 'muted' : ''}`}>{value}</div>
+      {hint && <div className="metric-hint">{hint}</div>}
     </div>
   )
 }

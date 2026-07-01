@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
+import math
 from datetime import date
 from decimal import Decimal
 
@@ -55,21 +56,70 @@ class Summary:
     estimated_stopaj: Decimal
     net_value: Decimal            # current_value - estimated_stopaj
     real_return: float | None     # reel (enflasyona göre) getiri; TÜFE yoksa None
+    xirr_note: str | None = None  # XIRR None ise kısa neden
     positions: list[PositionView] = field(default_factory=list)
 
 
 def xirr(cashflows: list[tuple[date, float]]) -> float | None:
-    """Tarihli nakit akışlarından yıllık para-ağırlıklı getiri (XIRR)."""
+    """Tarihli nakit akışlarından yıllık para-ağırlıklı getiri (XIRR).
+
+    Önce pyxirr (Newton); yakınsamazsa makul yıllık oran aralığında (-%99,99 .. +
+    %10.000) bisection ile kök aranır. Kök bu aralık dışındaysa (uç/aşırı oran) ya
+    da işaret karışımı yoksa None döner.
+    """
     if len(cashflows) < 2:
         return None
     dates = [d for d, _ in cashflows]
     amounts = [a for _, a in cashflows]
     if not (any(a > 0 for a in amounts) and any(a < 0 for a in amounts)):
         return None
+
+    # 1) pyxirr (Newton)
     try:
-        return pyxirr.xirr(dates, amounts)
+        r = pyxirr.xirr(dates, amounts)
+        if r is not None and math.isfinite(r):
+            return float(r)
     except Exception:  # noqa: BLE001  (yakınsamama vb.)
+        pass
+
+    # 2) Sağlam yedek: NPV'nin işaret değiştirdiği aralıkta bisection.
+    t0 = min(dates)
+
+    def _npv(rate: float) -> float:
+        return sum(a / (1.0 + rate) ** ((d - t0).days / 365.0) for d, a in zip(dates, amounts))
+
+    lo, hi = -0.9999, 100.0  # yıllık -%99,99 .. +%10.000
+    try:
+        flo, fhi = _npv(lo), _npv(hi)
+    except (OverflowError, ZeroDivisionError):
         return None
+    if not (math.isfinite(flo) and math.isfinite(fhi)) or flo * fhi > 0:
+        return None  # kök aralık dışında (dönem çok kısa / uç oran)
+    for _ in range(200):
+        mid = (lo + hi) / 2.0
+        fm = _npv(mid)
+        if abs(fm) < 1e-7:
+            return float(mid)
+        if flo * fm < 0:
+            hi = mid
+        else:
+            lo, flo = mid, fm
+    return float((lo + hi) / 2.0)
+
+
+def _xirr_note(cashflows: list[tuple[date, float]], as_of: date) -> str:
+    """XIRR hesaplanamadığında kullanıcıya kısa neden."""
+    neg = [(d, -a) for d, a in cashflows if a < 0]
+    if len(cashflows) < 2 or not neg or not any(a > 0 for _, a in cashflows):
+        return "İşlem verisi yetersiz (XIRR için alım + güncel değer gerekir)."
+    inv_total = sum(a for _, a in neg)
+    inv_today = sum(a for d, a in neg if d >= as_of)
+    if inv_total and inv_today / inv_total >= 0.5:
+        return (
+            "Alışların çoğu değerleme günüyle aynı tarihli; yıllık XIRR için işlemlere "
+            "gerçek alış tarihlerini girin."
+        )
+    return "Getiri yıllığa çevrilemedi (dönem çok kısa veya uç değer)."
 
 
 def build_cashflows(txs: list[TxIn], current_value: Decimal, as_of: date) -> list[tuple[date, float]]:
@@ -148,7 +198,9 @@ def summarize(
 
     total_pl = total_unreal + total_real
     simple_return = float(total_pl / total_invested) if total_invested else None
-    port_xirr = xirr(build_cashflows(txs, total_value, as_of))
+    cfs = build_cashflows(txs, total_value, as_of)
+    port_xirr = xirr(cfs)
+    xirr_note = None if port_xirr is not None else _xirr_note(cfs, as_of)
     rreturn = (
         evds.real_return(simple_return, inflation)
         if (simple_return is not None and inflation is not None)
@@ -167,6 +219,7 @@ def summarize(
         estimated_stopaj=total_stopaj,
         net_value=total_value - total_stopaj,
         real_return=rreturn,
+        xirr_note=xirr_note,
         positions=sorted(views, key=lambda v: v.market_value, reverse=True),
     )
 
