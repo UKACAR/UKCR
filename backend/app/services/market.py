@@ -160,3 +160,58 @@ def index_chart(symbol: str = "XU100.IS", rng: str = "1mo") -> list[dict]:
     if points:
         _chart_cache[key] = {"at": now, "points": points}
     return points
+
+
+_METALS = [
+    ("gold", "Altın", "GC=F"),
+    ("silver", "Gümüş", "SI=F"),
+    ("platinum", "Platin", "PL=F"),
+    ("palladium", "Paladyum", "PA=F"),
+]
+_metals_cache: dict = {"at": 0.0, "data": None}
+
+
+def precious_metals() -> dict:
+    """Kıymetli madenler: USD (ons/gram) + TL (ons/gram) fiyat ve günlük değişim.
+
+    Ons fiyatı Yahoo vadeli sözleşmesinden (GC=F vb.), gram = ons / 31.1035,
+    TL fiyatı × USD/TRY. Günlük değişim USD ve TL bazında ayrı verilir.
+    """
+    now = time.time()
+    if _metals_cache["data"] and now - _metals_cache["at"] < _LIVE_TTL:
+        return _metals_cache["data"]
+    syms = [s for _, _, s in _METALS] + ["TRY=X"]
+    try:
+        with httpx.Client(timeout=15.0, headers=_UA) as c:
+            q = {s: _quote(c, s) for s in syms}
+    except Exception:  # noqa: BLE001
+        return _metals_cache["data"] or {"metals": [], "usdtry": None}
+
+    usd = q.get("TRY=X")
+    metals: list[dict] = []
+    for key, name, sym in _METALS:
+        qm = q.get(sym)
+        if not qm:
+            continue
+        ons, prev = qm
+        gram = ons / _GRAM
+        usd_change = (ons / prev - 1.0) if prev else None
+        try_ons = try_gram = try_change = None
+        if usd and usd[0]:
+            u, uprev = usd
+            try_ons = ons * u
+            try_gram = gram * u
+            if prev and uprev:
+                prev_try_gram = (prev / _GRAM) * uprev
+                try_change = (try_gram / prev_try_gram - 1.0) if prev_try_gram else None
+        metals.append({
+            "key": key, "name": name, "symbol": sym,
+            "usd_ounce": ons, "usd_gram": gram,
+            "try_ounce": try_ons, "try_gram": try_gram,
+            "usd_change": usd_change, "try_change": try_change,
+        })
+    data = {"metals": metals, "usdtry": (usd[0] if usd else None)}
+    if metals:
+        _metals_cache["data"] = data
+        _metals_cache["at"] = now
+    return data

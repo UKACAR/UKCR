@@ -4,6 +4,7 @@ import PortfolioPanel from './components/PortfolioPanel'
 import FundExplorer from './components/FundExplorer'
 import FundCompare from './components/FundCompare'
 import Favorites from './components/Favorites'
+import Metals from './components/Metals'
 import Reminders from './components/Reminders'
 import Alarms from './components/Alarms'
 import Overview from './components/Overview'
@@ -14,6 +15,7 @@ type ViewId =
   | 'portfolio'
   | 'explore'
   | 'compare'
+  | 'metals'
   | 'reminders'
   | 'alarms'
 
@@ -23,6 +25,7 @@ const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
   { id: 'compare', label: 'Fon Karşılaştırma', Icon: IconCompare },
+  { id: 'metals', label: 'Kıymetli Madenler', Icon: IconMetal },
   { id: 'reminders', label: 'Vade & Hatırlatma', Icon: IconBell },
   { id: 'alarms', label: 'Fiyat Alarmı', Icon: IconAlarm },
 ]
@@ -103,6 +106,7 @@ export default function App() {
             />
           )}
           {view === 'compare' && <FundCompare onOpenFund={openFund} />}
+          {view === 'metals' && <Metals />}
           {view === 'reminders' && <Reminders />}
           {view === 'alarms' && <Alarms />}
         </main>
@@ -164,6 +168,16 @@ function IconStar() {
   return (
     <svg {...svg}>
       <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 17.1l-5.25 2.6 1-5.85L3.5 9.65l5.9-.85L12 3.5z" />
+    </svg>
+  )
+}
+
+function IconMetal() {
+  return (
+    <svg {...svg}>
+      <path d="M6 3h12l3 6-9 12L3 9z" />
+      <path d="M3 9h18" />
+      <path d="M9 3l3 6 3-6" />
     </svg>
   )
 }

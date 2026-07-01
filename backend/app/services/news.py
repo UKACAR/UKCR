@@ -9,13 +9,21 @@ from email.utils import parsedate_to_datetime
 
 import httpx
 
+_SUFFIX = "&hl=tr&gl=TR&ceid=TR:tr"
 RSS_URL = (
     "https://news.google.com/rss/search"
     "?q=borsa+OR+ekonomi+OR+%22yat%C4%B1r%C4%B1m+fonu%22+OR+d%C3%B6viz+OR+enflasyon+OR+TEFAS"
-    "&hl=tr&gl=TR&ceid=TR:tr"
+    + _SUFFIX
+)
+# Kıymetli madenler (altın/gümüş/platin/paladyum) piyasa haberleri
+METALS_RSS = (
+    "https://news.google.com/rss/search"
+    "?q=alt%C4%B1n+OR+g%C3%BCm%C3%BC%C5%9F+OR+platin+OR+paladyum+OR+%22k%C4%B1ymetli+maden%22"
+    + _SUFFIX
 )
 _TTL = 900  # 15 dk cache
 _cache: dict = {"at": 0.0, "items": []}
+_metals_cache: dict = {"at": 0.0, "items": []}
 
 
 def _relative(dt: datetime) -> str:
@@ -30,9 +38,9 @@ def _relative(dt: datetime) -> str:
     return f"{int(secs // 86400)}g"
 
 
-def _fetch() -> list[dict]:
+def _fetch(url: str = RSS_URL) -> list[dict]:
     try:
-        r = httpx.get(RSS_URL, timeout=15.0, headers={"User-Agent": "Mozilla/5.0"})
+        r = httpx.get(url, timeout=15.0, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
         root = ET.fromstring(r.content)
     except Exception:  # noqa: BLE001
@@ -68,3 +76,15 @@ def latest(limit: int = 12) -> list[dict]:
         _cache["items"] = items
         _cache["at"] = now
     return (_cache["items"] or [])[:limit]
+
+
+def metals_news(limit: int = 12) -> list[dict]:
+    """Kıymetli maden (altın/gümüş/platin/paladyum) piyasa haberleri."""
+    now = time.time()
+    if _metals_cache["items"] and now - _metals_cache["at"] < _TTL:
+        return _metals_cache["items"][:limit]
+    items = _fetch(METALS_RSS)
+    if items:
+        _metals_cache["items"] = items
+        _metals_cache["at"] = now
+    return (_metals_cache["items"] or [])[:limit]

@@ -145,6 +145,23 @@ export interface MarketItem {
   change?: number | null
 }
 
+export interface Metal {
+  key: string
+  name: string
+  symbol: string
+  usd_ounce: number
+  usd_gram: number
+  try_ounce: number | null
+  try_gram: number | null
+  usd_change: number | null
+  try_change: number | null
+}
+
+export interface MetalsData {
+  metals: Metal[]
+  usdtry: number | null
+}
+
 export interface MoverItem {
   code: string
   title: string

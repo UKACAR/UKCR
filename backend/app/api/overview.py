@@ -37,3 +37,14 @@ def get_movers(
 @router.get("/news", response_model=list[NewsItem])
 def get_news():
     return news.latest()
+
+
+@router.get("/metals")
+def get_metals():
+    """Kıymetli madenler: USD/TL fiyat + günlük değişim."""
+    return market.precious_metals()
+
+
+@router.get("/metals/news", response_model=list[NewsItem])
+def get_metals_news():
+    return news.metals_news()

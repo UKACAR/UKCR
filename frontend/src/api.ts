@@ -11,6 +11,7 @@ import type {
   FundListItem,
   ImportResult,
   IndexPoint,
+  MetalsData,
   Movers,
   NewsItem,
   Overview,
@@ -131,6 +132,10 @@ export const getMovers = (kind = 'FON') =>
   http.get<Movers>('/movers', { params: { kind } }).then((r) => r.data)
 
 export const getNews = () => http.get<NewsItem[]>('/news').then((r) => r.data)
+
+export const getMetals = () => http.get<MetalsData>('/metals').then((r) => r.data)
+
+export const getMetalsNews = () => http.get<NewsItem[]>('/metals/news').then((r) => r.data)
 
 export const getIndexChart = (symbol = 'XU100.IS', range = '1mo') =>
   http.get<IndexPoint[]>('/index', { params: { symbol, range } }).then((r) => r.data)

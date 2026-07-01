@@ -1620,6 +1620,80 @@ a.btn:hover {
   }
 }
 
+/* Kıymetli Madenler */
+.metals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 14px;
+}
+
+.metal-card {
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-top: 4px solid var(--ac-amber);
+  border-radius: 12px;
+  padding: 13px 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+}
+
+.metal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(22, 32, 64, 0.1);
+}
+
+.metal-card.active {
+  box-shadow: 0 0 0 2px rgba(224, 144, 30, 0.3);
+}
+
+.metal-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.metal-gram {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 3px;
+}
+
+.metal-unit {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.metal-chg {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.metal-detail {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.metal-detail span {
+  color: var(--muted);
+}
+
+.metal-detail b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* İşlem yönetimi — odak fon + düzenleme */
 .tx-focus {
   display: inline-flex;
