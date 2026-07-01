@@ -7,6 +7,7 @@ Kişisel/araştırma kullanımı içindir.
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import httpx
@@ -162,25 +163,30 @@ def index_chart(symbol: str = "XU100.IS", rng: str = "1mo") -> list[dict]:
     return points
 
 
-_METALS = [
-    ("gold", "Altın", "GC=F"),
-    ("silver", "Gümüş", "SI=F"),
-    ("platinum", "Platin", "PL=F"),
-    ("palladium", "Paladyum", "PA=F"),
+# (key, ad, sembol, birim, gram_hesapla) — gram=True ise ons/31.1035 gram fiyatı da verilir
+_COMMODITIES = [
+    ("gold", "Altın", "GC=F", "ons", True),
+    ("silver", "Gümüş", "SI=F", "ons", True),
+    ("platinum", "Platin", "PL=F", "ons", True),
+    ("palladium", "Paladyum", "PA=F", "ons", True),
+    ("copper", "Bakır", "HG=F", "libre", False),
+    ("brent", "Brent Petrol", "BZ=F", "varil", False),
+    ("wti", "Ham Petrol (WTI)", "CL=F", "varil", False),
+    ("natgas", "Doğalgaz", "NG=F", "MMBtu", False),
 ]
 _metals_cache: dict = {"at": 0.0, "data": None}
 
 
 def precious_metals() -> dict:
-    """Kıymetli madenler: USD (ons/gram) + TL (ons/gram) fiyat ve günlük değişim.
+    """Kıymetli madenler + emtia (petrol/doğalgaz/bakır): USD + TL fiyat/değişim.
 
-    Ons fiyatı Yahoo vadeli sözleşmesinden (GC=F vb.), gram = ons / 31.1035,
-    TL fiyatı × USD/TRY. Günlük değişim USD ve TL bazında ayrı verilir.
+    Fiyat Yahoo vadeli sözleşmesinden (birim başına: ons/varil/MMBtu/libre),
+    TL = × USD/TRY. gram=True olanlar için ayrıca gram (ons/31.1035) verilir.
     """
     now = time.time()
     if _metals_cache["data"] and now - _metals_cache["at"] < _LIVE_TTL:
         return _metals_cache["data"]
-    syms = [s for _, _, s in _METALS] + ["TRY=X"]
+    syms = [s for _, _, s, _, _ in _COMMODITIES] + ["TRY=X"]
     try:
         with httpx.Client(timeout=15.0, headers=_UA) as c:
             q = {s: _quote(c, s) for s in syms}
@@ -188,29 +194,31 @@ def precious_metals() -> dict:
         return _metals_cache["data"] or {"metals": [], "usdtry": None}
 
     usd = q.get("TRY=X")
+    u, uprev = (usd if usd else (None, None))
     metals: list[dict] = []
-    for key, name, sym in _METALS:
+    for key, name, sym, unit, is_gram in _COMMODITIES:
         qm = q.get(sym)
         if not qm:
             continue
-        ons, prev = qm
-        gram = ons / _GRAM
-        usd_change = (ons / prev - 1.0) if prev else None
-        try_ons = try_gram = try_change = None
-        if usd and usd[0]:
-            u, uprev = usd
-            try_ons = ons * u
-            try_gram = gram * u
+        price, prev = qm  # USD / birim
+        usd_change = (price / prev - 1.0) if prev else None
+        try_price = try_change = None
+        if u:
+            try_price = price * u
             if prev and uprev:
-                prev_try_gram = (prev / _GRAM) * uprev
-                try_change = (try_gram / prev_try_gram - 1.0) if prev_try_gram else None
-        metals.append({
-            "key": key, "name": name, "symbol": sym,
-            "usd_ounce": ons, "usd_gram": gram,
-            "try_ounce": try_ons, "try_gram": try_gram,
+                prev_try = prev * uprev
+                try_change = (try_price / prev_try - 1.0) if prev_try else None
+        item = {
+            "key": key, "name": name, "symbol": sym, "unit": unit, "gram": is_gram,
+            "usd_price": price, "try_price": try_price,
             "usd_change": usd_change, "try_change": try_change,
-        })
-    data = {"metals": metals, "usdtry": (usd[0] if usd else None)}
+        }
+        if is_gram:
+            item["usd_gram"] = price / _GRAM
+            item["try_gram"] = (price / _GRAM) * u if u else None
+        metals.append(item)
+
+    data = {"metals": metals, "usdtry": (u if usd else None)}
     if metals:
         _metals_cache["data"] = data
         _metals_cache["at"] = now
@@ -302,3 +310,153 @@ def market_board(name: str) -> dict:
         c["data"] = data
         c["at"] = now
     return data
+
+
+# ---- Günün enleri: en çok yükselen / düşen / işlem gören ----
+_MOVERS_TTL = 600  # 10 dk (hisse taraması ağır)
+_movers_cache: dict[str, dict] = {}
+
+# Likit ~40 BİST hissesi (Yahoo sembolü = kod + ".IS")
+_BIST_STOCKS = [
+    ("GARAN", "Garanti BBVA"), ("AKBNK", "Akbank"), ("ISCTR", "İş Bankası C"),
+    ("YKBNK", "Yapı Kredi"), ("VAKBN", "VakıfBank"), ("HALKB", "Halkbank"),
+    ("THYAO", "Türk Hava Yolları"), ("PGSUS", "Pegasus"), ("TUPRS", "Tüpraş"),
+    ("KCHOL", "Koç Holding"), ("SAHOL", "Sabancı Holding"), ("SISE", "Şişecam"),
+    ("EREGL", "Ereğli Demir Çelik"), ("KRDMD", "Kardemir D"), ("ASELS", "Aselsan"),
+    ("TOASO", "Tofaş"), ("FROTO", "Ford Otosan"), ("BIMAS", "BİM"),
+    ("MGROS", "Migros"), ("SASA", "Sasa Polyester"), ("PETKM", "Petkim"),
+    ("KOZAL", "Koza Altın"), ("KOZAA", "Koza Anadolu"), ("TCELL", "Turkcell"),
+    ("TTKOM", "Türk Telekom"), ("ENKAI", "Enka İnşaat"), ("EKGYO", "Emlak Konut"),
+    ("ARCLK", "Arçelik"), ("VESTL", "Vestel"), ("HEKTS", "Hektaş"),
+    ("ALARK", "Alarko Holding"), ("GUBRF", "Gübretaş"), ("TAVHL", "TAV Havalimanları"),
+    ("TKFEN", "Tekfen Holding"), ("OYAKC", "Oyak Çimento"), ("CIMSA", "Çimsa"),
+    ("SOKM", "Şok Marketler"), ("ASTOR", "Astor Enerji"), ("DOAS", "Doğuş Otomotiv"),
+    ("ISDMR", "İskenderun Demir"),
+]
+_CG_MARKETS = "https://api.coingecko.com/api/v3/coins/markets"
+
+
+def _stock_row(client: httpx.Client, code: str, name: str) -> dict | None:
+    """Bir BİST hissesi için (fiyat, günlük değişim, hacim) — 5 günlük mumdan."""
+    try:
+        r = client.get(_BASE + code + ".IS", params={"interval": "1d", "range": "5d"})
+        res = (r.json().get("chart") or {}).get("result")
+        if not res:
+            return None
+        result = res[0]
+        m = result.get("meta") or {}
+        q0 = (result.get("indicators", {}).get("quote") or [{}])[0]
+        closes = q0.get("close") or []
+        vols = q0.get("volume") or []
+        valid = [
+            (float(cl), float(v) if v is not None else 0.0)
+            for cl, v in zip(closes, vols)
+            if cl is not None
+        ]
+        if not valid:
+            return None
+        rmp = m.get("regularMarketPrice")
+        price = float(rmp) if rmp is not None else valid[-1][0]
+        last_close, last_vol = valid[-1]
+        prev = m.get("previousClose")
+        if prev is None:
+            prev = m.get("regularMarketPreviousClose")
+        if prev is None:
+            today_bar = abs(last_close - price) <= max(abs(price), 1.0) * 1e-4
+            if today_bar:
+                prev = valid[-2][0] if len(valid) >= 2 else None
+            else:
+                prev = last_close
+        change = (price / float(prev) - 1.0) if prev else None
+        return {
+            "code": code, "name": name, "price": price, "change": change,
+            "volume": last_vol, "tl_volume": last_vol * price,
+        }
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def bist_movers(top: int = 10) -> dict:
+    """BİST: en çok yükselen / düşen / işlem gören (TL hacim). ~40 likit hisse."""
+    now = time.time()
+    c = _movers_cache.setdefault("bist", {"at": 0.0, "data": None})
+    if c["data"] and now - c["at"] < _MOVERS_TTL:
+        return c["data"]
+    empty = {"currency": "TRY", "count": 0, "gainers": [], "losers": [], "most_traded": []}
+    rows: list[dict] = []
+    try:
+        with httpx.Client(timeout=12.0, headers=_UA) as cl:
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                for r in ex.map(lambda cn: _stock_row(cl, cn[0], cn[1]), _BIST_STOCKS):
+                    if r and r["change"] is not None:
+                        rows.append(r)
+    except Exception:  # noqa: BLE001
+        return c["data"] or empty
+    if not rows:
+        return c["data"] or empty
+
+    def fmt(lst: list[dict]) -> list[dict]:
+        return [
+            {"code": r["code"], "name": r["name"], "price": r["price"],
+             "change": r["change"], "volume": r["tl_volume"]}
+            for r in lst
+        ]
+
+    data = {
+        "currency": "TRY", "count": len(rows),
+        "gainers": fmt(sorted(rows, key=lambda x: x["change"], reverse=True)[:top]),
+        "losers": fmt(sorted(rows, key=lambda x: x["change"])[:top]),
+        "most_traded": fmt(sorted(rows, key=lambda x: x["tl_volume"], reverse=True)[:top]),
+    }
+    c["data"] = data
+    c["at"] = now
+    return data
+
+
+def crypto_movers(top: int = 10) -> dict:
+    """Kripto: en çok yükselen / düşen / işlem gören (24s USD hacim). CoinGecko top-100."""
+    now = time.time()
+    c = _movers_cache.setdefault("crypto", {"at": 0.0, "data": None})
+    if c["data"] and now - c["at"] < 180:  # 3 dk
+        return c["data"]
+    empty = {"currency": "USD", "count": 0, "gainers": [], "losers": [], "most_traded": []}
+    try:
+        with httpx.Client(timeout=15.0, headers=_UA) as cl:
+            r = cl.get(_CG_MARKETS, params={
+                "vs_currency": "usd", "order": "market_cap_desc",
+                "per_page": 100, "page": 1, "price_change_percentage": "24h",
+            })
+            arr = r.json()
+    except Exception:  # noqa: BLE001
+        return c["data"] or empty
+    if not isinstance(arr, list) or not arr:
+        return c["data"] or empty
+    rows: list[dict] = []
+    for x in arr:
+        ch = x.get("price_change_percentage_24h")
+        rows.append({
+            "code": (x.get("symbol") or "").upper(), "name": x.get("name"),
+            "price": x.get("current_price"),
+            "change": (ch / 100.0) if ch is not None else None,
+            "volume": x.get("total_volume"),
+        })
+    with_chg = [r for r in rows if r["change"] is not None]
+    with_vol = [r for r in rows if r["volume"] is not None]
+    data = {
+        "currency": "USD", "count": len(rows),
+        "gainers": sorted(with_chg, key=lambda x: x["change"], reverse=True)[:top],
+        "losers": sorted(with_chg, key=lambda x: x["change"])[:top],
+        "most_traded": sorted(with_vol, key=lambda x: x["volume"], reverse=True)[:top],
+    }
+    c["data"] = data
+    c["at"] = now
+    return data
+
+
+def board_movers(name: str) -> dict:
+    """Pano için günün enleri (bist/crypto)."""
+    if name == "bist":
+        return bist_movers()
+    if name == "crypto":
+        return crypto_movers()
+    return {"currency": None, "count": 0, "gainers": [], "losers": [], "most_traded": []}

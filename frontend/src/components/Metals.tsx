@@ -58,20 +58,34 @@ export default function Metals() {
           >
             <div className="metal-name">{m.name}</div>
             <div className="metal-gram">
-              {tl(m.try_gram)} <span className="metal-unit">/gram</span>
+              {m.gram ? tl(m.try_gram) : tl(m.try_price)}{' '}
+              <span className="metal-unit">/{m.gram ? 'gram' : m.unit}</span>
             </div>
             {m.try_change != null && (
               <div className={`metal-chg ${cls(m.try_change)}`}>{pct(m.try_change)}</div>
             )}
             <div className="metal-detail">
-              <span>USD/ons</span>
-              <b>{usd(m.usd_ounce)}</b>
-              <span>USD/gram</span>
-              <b>{usd(m.usd_gram)}</b>
-              <span>TL/ons</span>
-              <b>{tl(m.try_ounce)}</b>
-              <span>USD değ.</span>
-              <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
+              {m.gram ? (
+                <>
+                  <span>USD/ons</span>
+                  <b>{usd(m.usd_price)}</b>
+                  <span>USD/gram</span>
+                  <b>{usd(m.usd_gram)}</b>
+                  <span>TL/ons</span>
+                  <b>{tl(m.try_price)}</b>
+                  <span>USD değ.</span>
+                  <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
+                </>
+              ) : (
+                <>
+                  <span>USD/{m.unit}</span>
+                  <b>{usd(m.usd_price)}</b>
+                  <span>TL/{m.unit}</span>
+                  <b>{tl(m.try_price)}</b>
+                  <span>USD değ.</span>
+                  <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
+                </>
+              )}
             </div>
           </button>
           )
@@ -83,8 +97,8 @@ export default function Metals() {
 
       {metalsQ.data?.usdtry != null && (
         <p className="muted small">
-          Fiyatlar ~15 dk gecikmeli (Yahoo). Kur: 1 USD = {num(metalsQ.data.usdtry, 2)} ₺ · gram = ons
-          / 31,1035.
+          Fiyatlar ~15 dk gecikmeli (Yahoo). Kur: 1 USD = {num(metalsQ.data.usdtry, 2)} ₺ · kıymetli
+          madende gram = ons / 31,1035; petrol varil, doğalgaz MMBtu, bakır libre başınadır.
         </p>
       )}
 
@@ -92,8 +106,8 @@ export default function Metals() {
         <div className="card ac-amber">
           <div className="enler-head">
             <h2>
-              {sel?.name ?? 'Kıymetli Maden'} — USD/ons{' '}
-              {sel && <span className="bist-val">{usd(sel.usd_ounce)}</span>}{' '}
+              {sel?.name ?? 'Kıymetli Maden'} — USD/{sel?.unit ?? 'ons'}{' '}
+              {sel && <span className="bist-val">{usd(sel.usd_price)}</span>}{' '}
               {sel?.usd_change != null && (
                 <span className={`bist-chg ${cls(sel.usd_change)}`}>{pct(sel.usd_change)}</span>
               )}
@@ -130,7 +144,7 @@ export default function Metals() {
                   stroke="var(--muted)"
                   tickFormatter={(v: number) => v.toFixed(0)}
                 />
-                <Tooltip formatter={(v) => [`$${Number(v).toFixed(2)}`, 'USD/ons']} />
+                <Tooltip formatter={(v) => [`$${Number(v).toFixed(2)}`, `USD/${sel?.unit ?? 'ons'}`]} />
                 <Line type="monotone" dataKey="close" stroke="var(--ac-amber)" dot={false} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>

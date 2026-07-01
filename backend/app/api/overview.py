@@ -54,3 +54,9 @@ def get_metals_news():
 def get_board(name: str):
     """Piyasa panosu (bist / world / viop / crypto): anlık değer + günlük değişim."""
     return market.market_board(name)
+
+
+@router.get("/board/{name}/movers")
+def get_board_movers(name: str):
+    """Günün enleri (bist / crypto): en çok yükselen / düşen / işlem gören."""
+    return market.board_movers(name)

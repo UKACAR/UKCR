@@ -149,17 +149,35 @@ export interface Metal {
   key: string
   name: string
   symbol: string
-  usd_ounce: number
-  usd_gram: number
-  try_ounce: number | null
-  try_gram: number | null
+  unit: string
+  gram: boolean
+  usd_price: number
+  try_price: number | null
   usd_change: number | null
   try_change: number | null
+  usd_gram?: number | null
+  try_gram?: number | null
 }
 
 export interface MetalsData {
   metals: Metal[]
   usdtry: number | null
+}
+
+export interface MoverRow {
+  code: string
+  name: string | null
+  price: number | null
+  change: number | null
+  volume: number | null
+}
+
+export interface BoardMovers {
+  currency: 'TRY' | 'USD' | null
+  count: number
+  gainers: MoverRow[]
+  losers: MoverRow[]
+  most_traded: MoverRow[]
 }
 
 export interface BoardItem {

@@ -3,6 +3,7 @@ import type {
   Alarm,
   AlarmCreate,
   BoardData,
+  BoardMovers,
   CompareResponse,
   Favorite,
   FavoriteCreate,
@@ -137,6 +138,9 @@ export const getNews = (topic = 'general') =>
 
 export const getBoard = (name: string) =>
   http.get<BoardData>(`/board/${name}`).then((r) => r.data)
+
+export const getBoardMovers = (name: string) =>
+  http.get<BoardMovers>(`/board/${name}/movers`).then((r) => r.data)
 
 export const getMetals = () => http.get<MetalsData>('/metals').then((r) => r.data)
 

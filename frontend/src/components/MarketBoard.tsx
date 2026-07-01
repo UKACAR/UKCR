@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { getBoard, getIndexChart, getNews } from '../api'
 import { num, pct, tl } from '../format'
+import BoardMovers from './BoardMovers'
 
 const RANGES = [
   { id: '1mo', label: '1A' },
@@ -26,11 +27,13 @@ export default function MarketBoard({
   newsTopic,
   newsTitle,
   note,
+  moversBoard,
 }: {
   board: string
   newsTopic: string
   newsTitle: string
   note?: string
+  moversBoard?: string
 }) {
   const [range, setRange] = useState('6mo')
   const [selected, setSelected] = useState<string | null>(null)
@@ -150,6 +153,8 @@ export default function MarketBoard({
           </ul>
         </div>
       </div>
+
+      {moversBoard && <BoardMovers board={moversBoard} />}
     </div>
   )
 }

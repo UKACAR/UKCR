@@ -33,7 +33,7 @@ const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
   { id: 'compare', label: 'Fon Karşılaştırma', Icon: IconCompare },
   { id: 'bist', label: 'BİST İstanbul', Icon: IconBist },
-  { id: 'metals', label: 'Kıymetli Madenler', Icon: IconMetal },
+  { id: 'metals', label: 'Kıymetli Madenler & Emtia', Icon: IconMetal },
   { id: 'crypto', label: 'Kripto', Icon: IconCrypto },
   { id: 'etf', label: 'ETF', Icon: IconEtf },
   { id: 'viop', label: 'VİOP', Icon: IconViop },
@@ -122,6 +122,7 @@ export default function App() {
           {view === 'bist' && (
             <MarketBoard
               board="bist"
+              moversBoard="bist"
               newsTopic="bist"
               newsTitle="BİST & Piyasa Haberleri"
               note="Endeks/hisse değerleri ~15 dk gecikmeli (Yahoo Finance)."
@@ -130,6 +131,7 @@ export default function App() {
           {view === 'crypto' && (
             <MarketBoard
               board="crypto"
+              moversBoard="crypto"
               newsTopic="crypto"
               newsTitle="Kripto Haberleri"
               note="USD ve TL (güncel kur ile) · ~15 dk gecikmeli."
