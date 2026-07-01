@@ -13,6 +13,18 @@ import type { Summary, TransactionCreate } from '../types'
 import { num, pct, tl } from '../format'
 import ImportExport from './ImportExport'
 
+const STORAGE_KEY = 'ukcr.portfolio.selectedId'
+
+function loadSelectedId(): number | null {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY)
+    const n = v ? Number(v) : NaN
+    return Number.isFinite(n) ? n : null
+  } catch {
+    return null
+  }
+}
+
 const today = () => new Date().toISOString().slice(0, 10)
 const emptyForm = (): TransactionCreate => ({
   fund_code: '',
@@ -27,8 +39,24 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
   const qc = useQueryClient()
   const portfoliosQ = useQuery({ queryKey: ['portfolios'], queryFn: listPortfolios })
 
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  const pid = selectedId ?? portfoliosQ.data?.[0]?.id ?? null
+  const [selectedId, setSelectedId] = useState<number | null>(loadSelectedId)
+  const portfolios = portfoliosQ.data
+  // Geçerli seçim: kaydedilen id listede varsa o, yoksa ilk portföy.
+  const pid =
+    selectedId != null && portfolios?.some((p) => p.id === selectedId)
+      ? selectedId
+      : portfolios?.[0]?.id ?? null
+
+  // Son seçilen portföyü hatırla → uygulama açılınca o gelsin.
+  useEffect(() => {
+    if (selectedId != null) {
+      try {
+        localStorage.setItem(STORAGE_KEY, String(selectedId))
+      } catch {
+        /* yoksay */
+      }
+    }
+  }, [selectedId])
 
   const [newName, setNewName] = useState('')
   const createM = useMutation({
