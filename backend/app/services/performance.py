@@ -23,7 +23,6 @@ from app.db.models import TX_BUY, Instrument, Price, Transaction
 from app.ingestion import store
 
 PERIODS = [("week", 7), ("m1", 30), ("m3", 90), ("m6", 180), ("y1", 365)]
-_SNAPSHOT_DAYS = 14  # ilk işlem bu kadar yakınsa portföy "anlık" → backtest
 
 
 def _nav_asof(dates: list[date], navs: list[float], d: date) -> float | None:
@@ -40,17 +39,23 @@ def _table_and_returns(series: list[tuple[date, float, float, float]], today: da
     ]
     dates = [s[0] for s in series]
     rets = [s[3] for s in series]
+    pls = [s[2] for s in series]
     returns: dict[str, float | None] = {}
+    returns_tl: dict[str, float | None] = {}
     for key, days in PERIODS:
         base_idx = bisect_right(dates, today - timedelta(days=days)) - 1
         if base_idx < 0:
             returns[key] = None
+            returns_tl[key] = None
             continue
         prod = 1.0
+        tl_sum = 0.0
         for j in range(base_idx + 1, len(series)):
             prod *= 1.0 + rets[j]
+            tl_sum += pls[j]  # dönem boyunca fiyat hareketinden gelen TL K/Z
         returns[key] = round(prod - 1.0, 6)
-    return {"daily": daily, "returns": returns}
+        returns_tl[key] = round(tl_sum, 2)
+    return {"daily": daily, "returns": returns, "returns_tl": returns_tl}
 
 
 def portfolio_performance(db: Session, portfolio_id: int, *, table_months: int = 6) -> dict:
@@ -63,7 +68,12 @@ def portfolio_performance(db: Session, portfolio_id: int, *, table_months: int =
         .scalars()
         .all()
     )
-    empty = {"mode": "none", "daily": [], "returns": {k: None for k, _ in PERIODS}}
+    empty = {
+        "mode": "none",
+        "daily": [],
+        "returns": {k: None for k, _ in PERIODS},
+        "returns_tl": {k: None for k, _ in PERIODS},
+    }
     if not txs:
         return empty
 
@@ -100,69 +110,35 @@ def portfolio_performance(db: Session, portfolio_id: int, *, table_months: int =
     if not axis:
         return empty
 
-    first_tx = min(t.trade_date for t in txs)
-    backtest = (today - first_tx).days < _SNAPSHOT_DAYS
-
+    # Portföyün GÜNCEL net dağılımını geçmiş NAV'larla değerle. İşlem fiyatı/
+    # tarih tutarsızlıklarından (maliyet fiyatıyla girilen pozisyon, tek eski
+    # test işlemi vb.) bağımsız ve sağlamdır → "bu dağılım son 6 ayda nasıl
+    # performans gösterirdi". Günlük K/Z = güncel adetlerin piyasa değerindeki
+    # günlük değişim.
+    holdings: dict[int, float] = {
+        iid: sum(
+            float(t.quantity) if t.type == TX_BUY else -float(t.quantity)
+            for t in by_fund[iid]
+        )
+        for iid in fund_ids
+    }
     series: list[tuple[date, float, float, float]] = []
     value_prev: float | None = None
-
-    if backtest:
-        # Sabit güncel adetler geçmiş NAV'larla değerlenir.
-        holdings: dict[int, float] = {}
+    for D in axis:
+        value = 0.0
         for iid in fund_ids:
-            h = 0.0
-            for t in by_fund[iid]:
-                h += float(t.quantity) if t.type == TX_BUY else -float(t.quantity)
-            holdings[iid] = h
-        for D in axis:
-            value = 0.0
-            for iid in fund_ids:
-                if holdings[iid]:
-                    nav = _nav_asof(*navs[iid], D)
-                    if nav is not None:
-                        value += holdings[iid] * nav
-            if value_prev is not None and value_prev > 0:
-                pl = value - value_prev
-                ret = pl / value_prev
-            else:
-                pl, ret = 0.0, 0.0
-            series.append((D, value, pl, ret))
-            value_prev = value
-        mode = "backtest"
-    else:
-        tx_ptr = {iid: 0 for iid in fund_ids}
-        holdings = {iid: 0.0 for iid in fund_ids}
-        for D in axis:
-            netcost = 0.0
-            for iid in fund_ids:
-                lst = by_fund[iid]
-                while tx_ptr[iid] < len(lst) and lst[tx_ptr[iid]].trade_date <= D:
-                    t = lst[tx_ptr[iid]]
-                    q, pr, fee = float(t.quantity), float(t.price), float(t.fee or 0)
-                    if t.type == TX_BUY:
-                        holdings[iid] += q
-                        if t.trade_date == D:
-                            netcost += q * pr + fee
-                    else:
-                        holdings[iid] -= q
-                        if t.trade_date == D:
-                            netcost -= q * pr - fee
-                    tx_ptr[iid] += 1
-            value = 0.0
-            for iid in fund_ids:
-                if holdings[iid]:
-                    nav = _nav_asof(*navs[iid], D)
-                    if nav is not None:
-                        value += holdings[iid] * nav
-            if value_prev is not None and value_prev > 0:
-                pl = value - value_prev - netcost
-                ret = pl / value_prev
-            else:
-                pl, ret = 0.0, 0.0
-            series.append((D, value, pl, ret))
-            value_prev = value
-        mode = "actual"
+            if holdings[iid]:
+                nav = _nav_asof(*navs[iid], D)
+                if nav is not None:
+                    value += holdings[iid] * nav
+        if value_prev is not None and value_prev > 0:
+            pl = value - value_prev
+            ret = pl / value_prev
+        else:
+            pl, ret = 0.0, 0.0
+        series.append((D, value, pl, ret))
+        value_prev = value
 
     out = _table_and_returns(series, today, table_months)
-    out["mode"] = mode
+    out["mode"] = "holdings"
     return out

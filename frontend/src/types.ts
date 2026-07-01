@@ -250,16 +250,19 @@ export interface PerfDay {
   pl_pct: number
 }
 
+export interface PeriodMap {
+  week: number | null
+  m1: number | null
+  m3: number | null
+  m6: number | null
+  y1: number | null
+}
+
 export interface PortfolioPerformance {
-  mode: 'actual' | 'backtest' | 'none'
+  mode: 'holdings' | 'none'
   daily: PerfDay[]
-  returns: {
-    week: number | null
-    m1: number | null
-    m3: number | null
-    m6: number | null
-    y1: number | null
-  }
+  returns: PeriodMap
+  returns_tl: PeriodMap
 }
 
 export interface Summary {

@@ -43,11 +43,7 @@ export default function PortfolioPerformance({ pid }: { pid: number }) {
     <div className="card ac-purple">
       <div className="perf-head">
         <h2>Günlük Kâr/Zarar</h2>
-        {data.mode === 'backtest' && (
-          <span className="muted small">
-            Mevcut dağılımın son 6 aydaki performansı (geriye dönük)
-          </span>
-        )}
+        <span className="muted small">Güncel dağılımın son 6 aydaki performansı</span>
       </div>
 
       <div className="perf-grid">
@@ -75,15 +71,15 @@ export default function PortfolioPerformance({ pid }: { pid: number }) {
         </div>
 
         <div className="perf-returns">
-          <div className="perf-returns-title">Dönem Getirisi</div>
+          <div className="perf-returns-title">Dönem Getirisi (TL)</div>
           <ul className="perf-returns-list">
             {RETURN_ROWS.map(([label, key]) => {
-              const v = data.returns[key]
+              const v = data.returns_tl[key]
               return (
                 <li key={key}>
                   <span className="prl-label">{label}</span>
                   <span className={`prl-val ${v == null ? 'muted' : sgn(v)}`}>
-                    {v == null ? '—' : pct(v)}
+                    {v == null ? '—' : tl(v)}
                   </span>
                 </li>
               )
