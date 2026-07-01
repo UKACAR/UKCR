@@ -215,3 +215,90 @@ def precious_metals() -> dict:
         _metals_cache["data"] = data
         _metals_cache["at"] = now
     return data
+
+
+# Piyasa panoları (Yahoo sembolleri) — BİST / Dünya / VİOP dayanakları / Kripto
+BOARDS: dict[str, dict] = {
+    "bist": {
+        "with_try": False,
+        "items": [
+            ("BİST 100", "XU100.IS"), ("BİST 30", "XU030.IS"),
+            ("BİST Banka", "XBANK.IS"), ("BİST Sınai", "XUSIN.IS"),
+            ("BİST Teknoloji", "XUTEK.IS"), ("BİST Holding", "XHOLD.IS"),
+            ("THYAO", "THYAO.IS"), ("GARAN", "GARAN.IS"), ("AKBNK", "AKBNK.IS"),
+            ("ASELS", "ASELS.IS"), ("KCHOL", "KCHOL.IS"), ("SASA", "SASA.IS"),
+        ],
+    },
+    "world": {
+        "with_try": False,
+        "items": [
+            ("S&P 500", "^GSPC"), ("Nasdaq", "^IXIC"), ("Dow Jones", "^DJI"),
+            ("DAX (Almanya)", "^GDAXI"), ("FTSE 100 (İngiltere)", "^FTSE"),
+            ("CAC 40 (Fransa)", "^FCHI"), ("Nikkei 225 (Japonya)", "^N225"),
+            ("Hang Seng (Hong Kong)", "^HSI"), ("Brent Petrol", "BZ=F"),
+            ("VIX (Korku Endeksi)", "^VIX"), ("EUR/USD", "EURUSD=X"),
+        ],
+    },
+    "viop": {
+        "with_try": False,
+        "items": [
+            ("BİST 30 (dayanak)", "XU030.IS"), ("Dolar/TL", "TRY=X"),
+            ("Euro/TL", "EURTRY=X"), ("Ons Altın", "GC=F"), ("Ons Gümüş", "SI=F"),
+        ],
+    },
+    "crypto": {
+        "with_try": True,
+        "items": [
+            ("Bitcoin", "BTC-USD"), ("Ethereum", "ETH-USD"), ("BNB", "BNB-USD"),
+            ("Solana", "SOL-USD"), ("XRP", "XRP-USD"), ("Cardano", "ADA-USD"),
+            ("Dogecoin", "DOGE-USD"), ("Tron", "TRX-USD"), ("Avalanche", "AVAX-USD"),
+            ("Polkadot", "DOT-USD"),
+        ],
+    },
+}
+_board_cache: dict[str, dict] = {}
+
+
+def market_board(name: str) -> dict:
+    """Bir piyasa panosunun anlık değerleri: [{label, symbol, value, change, try_value?}]."""
+    conf = BOARDS.get(name)
+    if not conf:
+        return {"items": [], "usdtry": None}
+    now = time.time()
+    c = _board_cache.setdefault(name, {"at": 0.0, "data": None})
+    if c["data"] and now - c["at"] < _LIVE_TTL:
+        return c["data"]
+
+    pairs = conf["items"]
+    with_try = conf["with_try"]
+    syms = {s for _, s in pairs}
+    if with_try:
+        syms.add("TRY=X")
+    try:
+        with httpx.Client(timeout=15.0, headers=_UA) as cl:
+            q = {s: _quote(cl, s) for s in syms}
+    except Exception:  # noqa: BLE001
+        return c["data"] or {"items": [], "usdtry": None}
+
+    usd = q.get("TRY=X") if with_try else None
+    items: list[dict] = []
+    for label, sym in pairs:
+        qm = q.get(sym)
+        if not qm:
+            continue
+        price, prev = qm
+        it = {
+            "label": label,
+            "symbol": sym,
+            "value": price,
+            "change": (price / prev - 1.0) if prev else None,
+        }
+        if with_try and usd and usd[0]:
+            it["try_value"] = price * usd[0]
+        items.append(it)
+
+    data = {"items": items, "usdtry": (usd[0] if usd else None)}
+    if items:
+        c["data"] = data
+        c["at"] = now
+    return data

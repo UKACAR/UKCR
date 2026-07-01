@@ -1,4 +1,7 @@
-"""Finans/ekonomi haberleri — Google News RSS (Türkçe). Ücretsiz, anahtarsız."""
+"""Finans/ekonomi haberleri — Google News RSS (Türkçe). Ücretsiz, anahtarsız.
+
+Konu bazlı: general / metals / crypto / bist / etf / viop / world.
+"""
 
 from __future__ import annotations
 
@@ -6,24 +9,26 @@ import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from urllib.parse import quote
 
 import httpx
 
+_BASE = "https://news.google.com/rss/search?q="
 _SUFFIX = "&hl=tr&gl=TR&ceid=TR:tr"
-RSS_URL = (
-    "https://news.google.com/rss/search"
-    "?q=borsa+OR+ekonomi+OR+%22yat%C4%B1r%C4%B1m+fonu%22+OR+d%C3%B6viz+OR+enflasyon+OR+TEFAS"
-    + _SUFFIX
-)
-# Kıymetli madenler (altın/gümüş/platin/paladyum) piyasa haberleri
-METALS_RSS = (
-    "https://news.google.com/rss/search"
-    "?q=alt%C4%B1n+OR+g%C3%BCm%C3%BC%C5%9F+OR+platin+OR+paladyum+OR+%22k%C4%B1ymetli+maden%22"
-    + _SUFFIX
-)
 _TTL = 900  # 15 dk cache
-_cache: dict = {"at": 0.0, "items": []}
-_metals_cache: dict = {"at": 0.0, "items": []}
+
+# Konu -> Google News arama sorgusu
+TOPICS: dict[str, str] = {
+    "general": 'borsa OR ekonomi OR "yatırım fonu" OR döviz OR enflasyon OR TEFAS',
+    "metals": 'altın OR gümüş OR platin OR paladyum OR "kıymetli maden"',
+    "crypto": "kripto para OR bitcoin OR ethereum OR kripto borsa",
+    "bist": "borsa istanbul OR BİST 100 OR hisse senedi",
+    "etf": "borsa yatırım fonu OR ETF fonu",
+    "viop": "VİOP OR vadeli işlem OR opsiyon piyasası",
+    "world": "dünya borsaları OR küresel piyasalar OR Wall Street OR S&P 500",
+}
+
+_caches: dict[str, dict] = {}
 
 
 def _relative(dt: datetime) -> str:
@@ -38,7 +43,7 @@ def _relative(dt: datetime) -> str:
     return f"{int(secs // 86400)}g"
 
 
-def _fetch(url: str = RSS_URL) -> list[dict]:
+def _fetch(url: str) -> list[dict]:
     try:
         r = httpx.get(url, timeout=15.0, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
@@ -51,8 +56,7 @@ def _fetch(url: str = RSS_URL) -> list[dict]:
         title = (item.findtext("title") or "").strip()
         link = (item.findtext("link") or "").strip()
         src_el = item.find("source")
-        source = (src_el.text.strip() if src_el is not None and src_el.text else "")
-        # Google News başlıkları çoğu zaman "Başlık - Kaynak" biçiminde; eki temizle
+        source = src_el.text.strip() if src_el is not None and src_el.text else ""
         if source and title.endswith(f" - {source}"):
             title = title[: -(len(source) + 3)].strip()
         when = ""
@@ -67,24 +71,22 @@ def _fetch(url: str = RSS_URL) -> list[dict]:
     return out
 
 
-def latest(limit: int = 12) -> list[dict]:
+def news_for(topic: str = "general", limit: int = 12) -> list[dict]:
+    query = TOPICS.get(topic, TOPICS["general"])
+    cache = _caches.setdefault(topic, {"at": 0.0, "items": []})
     now = time.time()
-    if _cache["items"] and now - _cache["at"] < _TTL:
-        return _cache["items"][:limit]
-    items = _fetch()
+    if cache["items"] and now - cache["at"] < _TTL:
+        return cache["items"][:limit]
+    items = _fetch(_BASE + quote(query) + _SUFFIX)
     if items:
-        _cache["items"] = items
-        _cache["at"] = now
-    return (_cache["items"] or [])[:limit]
+        cache["items"] = items
+        cache["at"] = now
+    return (cache["items"] or [])[:limit]
+
+
+def latest(limit: int = 12) -> list[dict]:
+    return news_for("general", limit)
 
 
 def metals_news(limit: int = 12) -> list[dict]:
-    """Kıymetli maden (altın/gümüş/platin/paladyum) piyasa haberleri."""
-    now = time.time()
-    if _metals_cache["items"] and now - _metals_cache["at"] < _TTL:
-        return _metals_cache["items"][:limit]
-    items = _fetch(METALS_RSS)
-    if items:
-        _metals_cache["items"] = items
-        _metals_cache["at"] = now
-    return (_metals_cache["items"] or [])[:limit]
+    return news_for("metals", limit)

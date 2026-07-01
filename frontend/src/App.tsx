@@ -5,6 +5,8 @@ import FundExplorer from './components/FundExplorer'
 import FundCompare from './components/FundCompare'
 import Favorites from './components/Favorites'
 import Metals from './components/Metals'
+import MarketBoard from './components/MarketBoard'
+import EtfMarket from './components/EtfMarket'
 import Reminders from './components/Reminders'
 import Alarms from './components/Alarms'
 import Overview from './components/Overview'
@@ -16,6 +18,11 @@ type ViewId =
   | 'explore'
   | 'compare'
   | 'metals'
+  | 'bist'
+  | 'crypto'
+  | 'etf'
+  | 'viop'
+  | 'world'
   | 'reminders'
   | 'alarms'
 
@@ -25,7 +32,12 @@ const NAV: { id: ViewId; label: string; Icon: ComponentType }[] = [
   { id: 'portfolio', label: 'Portföyüm', Icon: IconPortfolio },
   { id: 'explore', label: 'Fon Keşfi', Icon: IconSearch },
   { id: 'compare', label: 'Fon Karşılaştırma', Icon: IconCompare },
+  { id: 'bist', label: 'BİST İstanbul', Icon: IconBist },
   { id: 'metals', label: 'Kıymetli Madenler', Icon: IconMetal },
+  { id: 'crypto', label: 'Kripto', Icon: IconCrypto },
+  { id: 'etf', label: 'ETF', Icon: IconEtf },
+  { id: 'viop', label: 'VİOP', Icon: IconViop },
+  { id: 'world', label: 'Dünya Borsaları', Icon: IconWorld },
   { id: 'reminders', label: 'Vade & Hatırlatma', Icon: IconBell },
   { id: 'alarms', label: 'Fiyat Alarmı', Icon: IconAlarm },
 ]
@@ -107,6 +119,39 @@ export default function App() {
           )}
           {view === 'compare' && <FundCompare onOpenFund={openFund} />}
           {view === 'metals' && <Metals />}
+          {view === 'bist' && (
+            <MarketBoard
+              board="bist"
+              newsTopic="bist"
+              newsTitle="BİST & Piyasa Haberleri"
+              note="Endeks/hisse değerleri ~15 dk gecikmeli (Yahoo Finance)."
+            />
+          )}
+          {view === 'crypto' && (
+            <MarketBoard
+              board="crypto"
+              newsTopic="crypto"
+              newsTitle="Kripto Haberleri"
+              note="USD ve TL (güncel kur ile) · ~15 dk gecikmeli."
+            />
+          )}
+          {view === 'etf' && <EtfMarket onOpenFund={openFund} />}
+          {view === 'viop' && (
+            <MarketBoard
+              board="viop"
+              newsTopic="viop"
+              newsTitle="VİOP & Vadeli Haberler"
+              note="VİOP sözleşme verisi ücretsiz olmadığından dayanak varlıklar (BİST 30, döviz, altın, gümüş) gösterilir."
+            />
+          )}
+          {view === 'world' && (
+            <MarketBoard
+              board="world"
+              newsTopic="world"
+              newsTitle="Dünya Piyasa Haberleri"
+              note="Küresel endeksler ~15 dk gecikmeli; farklı saat dilimleri nedeniyle bazıları kapalı olabilir."
+            />
+          )}
           {view === 'reminders' && <Reminders />}
           {view === 'alarms' && <Alarms />}
         </main>
@@ -178,6 +223,55 @@ function IconMetal() {
       <path d="M6 3h12l3 6-9 12L3 9z" />
       <path d="M3 9h18" />
       <path d="M9 3l3 6 3-6" />
+    </svg>
+  )
+}
+
+function IconBist() {
+  return (
+    <svg {...svg}>
+      <path d="M12 3l9 5H3z" />
+      <path d="M4 8v10M9 8v10M15 8v10M20 8v10" />
+      <path d="M3 21h18" />
+    </svg>
+  )
+}
+
+function IconCrypto() {
+  return (
+    <svg {...svg}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 8h4a2 2 0 0 1 0 4h-4zM9.5 12h4.3a2 2 0 0 1 0 4H9.5zM9.5 8v8" />
+      <path d="M11 6.5v1.5M13 6.5v1.5M11 16v1.5M13 16v1.5" />
+    </svg>
+  )
+}
+
+function IconEtf() {
+  return (
+    <svg {...svg}>
+      <path d="M12 3l9 5-9 5-9-5z" />
+      <path d="M3 12l9 5 9-5" />
+      <path d="M3 16.5l9 5 9-5" />
+    </svg>
+  )
+}
+
+function IconViop() {
+  return (
+    <svg {...svg}>
+      <path d="M4 8h13l-3-3" />
+      <path d="M20 16H7l3 3" />
+    </svg>
+  )
+}
+
+function IconWorld() {
+  return (
+    <svg {...svg}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
     </svg>
   )
 }

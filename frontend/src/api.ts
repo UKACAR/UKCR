@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   Alarm,
   AlarmCreate,
+  BoardData,
   CompareResponse,
   Favorite,
   FavoriteCreate,
@@ -131,7 +132,11 @@ export const getOverview = () => http.get<Overview>('/overview').then((r) => r.d
 export const getMovers = (kind = 'FON') =>
   http.get<Movers>('/movers', { params: { kind } }).then((r) => r.data)
 
-export const getNews = () => http.get<NewsItem[]>('/news').then((r) => r.data)
+export const getNews = (topic = 'general') =>
+  http.get<NewsItem[]>('/news', { params: { topic } }).then((r) => r.data)
+
+export const getBoard = (name: string) =>
+  http.get<BoardData>(`/board/${name}`).then((r) => r.data)
 
 export const getMetals = () => http.get<MetalsData>('/metals').then((r) => r.data)
 

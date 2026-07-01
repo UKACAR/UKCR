@@ -162,6 +162,19 @@ export interface MetalsData {
   usdtry: number | null
 }
 
+export interface BoardItem {
+  label: string
+  symbol: string
+  value: number
+  change: number | null
+  try_value?: number | null
+}
+
+export interface BoardData {
+  items: BoardItem[]
+  usdtry: number | null
+}
+
 export interface MoverItem {
   code: string
   title: string

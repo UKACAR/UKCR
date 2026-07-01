@@ -1694,6 +1694,18 @@ a.btn:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.etf-table {
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.etf-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
 /* İşlem yönetimi — odak fon + düzenleme */
 .tx-focus {
   display: inline-flex;

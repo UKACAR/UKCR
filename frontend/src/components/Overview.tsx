@@ -90,7 +90,7 @@ export default function Overview({
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   })
-  const newsQ = useQuery({ queryKey: ['news'], queryFn: getNews, refetchInterval: 600_000 })
+  const newsQ = useQuery({ queryKey: ['news'], queryFn: () => getNews(), refetchInterval: 600_000 })
   const moversQ = useQuery({
     queryKey: ['movers', kind],
     queryFn: () => getMovers(kind),

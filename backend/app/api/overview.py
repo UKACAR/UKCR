@@ -35,8 +35,8 @@ def get_movers(
 
 
 @router.get("/news", response_model=list[NewsItem])
-def get_news():
-    return news.latest()
+def get_news(topic: str = Query("general", description="general/metals/crypto/bist/etf/viop/world")):
+    return news.news_for(topic)
 
 
 @router.get("/metals")
@@ -48,3 +48,9 @@ def get_metals():
 @router.get("/metals/news", response_model=list[NewsItem])
 def get_metals_news():
     return news.metals_news()
+
+
+@router.get("/board/{name}")
+def get_board(name: str):
+    """Piyasa panosu (bist / world / viop / crypto): anlık değer + günlük değişim."""
+    return market.market_board(name)
