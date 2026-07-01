@@ -46,10 +46,14 @@ export default function Metals() {
   return (
     <div className="stack">
       <div className="metals-grid">
-        {metals.map((m) => (
+        {metals.map((m) => {
+          const chg = m.try_change ?? m.usd_change
+          return (
           <button
             key={m.key}
-            className={`metal-card ${sel?.key === m.key ? 'active' : ''}`}
+            className={`metal-card ${sel?.key === m.key ? 'active' : ''} ${
+              chg == null ? '' : chg >= 0 ? 'up' : 'down'
+            }`}
             onClick={() => setSelected(m.key)}
           >
             <div className="metal-name">{m.name}</div>
@@ -70,7 +74,8 @@ export default function Metals() {
               <b className={cls(m.usd_change)}>{pct(m.usd_change)}</b>
             </div>
           </button>
-        ))}
+          )
+        })}
         {metalsQ.data && metals.length === 0 && (
           <p className="muted small">Kıymetli maden verisi alınamadı.</p>
         )}

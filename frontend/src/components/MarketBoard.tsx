@@ -62,7 +62,9 @@ export default function MarketBoard({
         {items.map((it) => (
           <button
             key={it.symbol}
-            className={`metal-card ${sel?.symbol === it.symbol ? 'active' : ''}`}
+            className={`metal-card ${sel?.symbol === it.symbol ? 'active' : ''} ${
+              it.change == null ? '' : it.change >= 0 ? 'up' : 'down'
+            }`}
             onClick={() => setSelected(it.symbol)}
           >
             <div className="metal-name">{it.label}</div>

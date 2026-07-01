@@ -1646,8 +1646,17 @@ a.btn:hover {
   box-shadow: 0 8px 22px rgba(22, 32, 64, 0.1);
 }
 
+/* Günlük değişime göre üst çizgi: artı yeşil, eksi kırmızı */
+.metal-card.up {
+  border-top-color: var(--pos);
+}
+
+.metal-card.down {
+  border-top-color: var(--neg);
+}
+
 .metal-card.active {
-  box-shadow: 0 0 0 2px rgba(224, 144, 30, 0.3);
+  box-shadow: 0 0 0 2px var(--accent-2);
 }
 
 .metal-name {
