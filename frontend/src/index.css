@@ -1620,6 +1620,27 @@ a.btn:hover {
   }
 }
 
+/* İşlem yönetimi — odak fon + düzenleme */
+.tx-focus {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.tx-actions {
+  display: inline-flex;
+  gap: 2px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.row-editing {
+  background: var(--buy-bg);
+}
+
 /* Mobil ince ayar — base kurallardan SONRA gelmeli ki override etsin */
 @media (max-width: 640px) {
   .app-header {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -8,8 +8,9 @@ import {
   getSummary,
   listPortfolios,
   listTransactions,
+  updateTransaction,
 } from '../api'
-import type { Summary, TransactionCreate } from '../types'
+import type { Summary, Transaction, TransactionCreate } from '../types'
 import { num, pct, tl } from '../format'
 import ImportExport from './ImportExport'
 import PortfolioPerformance from './PortfolioPerformance'
@@ -81,6 +82,10 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
   })
 
   const [form, setForm] = useState<TransactionCreate>(emptyForm())
+  const [focusFund, setFocusFund] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (prefillCode) setForm((f) => ({ ...f, fund_code: prefillCode }))
   }, [prefillCode])
@@ -88,6 +93,36 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['summary', pid] })
     qc.invalidateQueries({ queryKey: ['transactions', pid] })
+    qc.invalidateQueries({ queryKey: ['performance', pid] })
+  }
+
+  const scrollToForm = () =>
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  // Pozisyondan bir fona "gir": o fonu seç, işlemleri o fona filtrele
+  const openFund = (code: string) => {
+    setFocusFund(code)
+    setEditingId(null)
+    setForm({ ...emptyForm(), fund_code: code })
+    scrollToForm()
+  }
+  const clearFocus = () => {
+    setFocusFund(null)
+    setEditingId(null)
+    setForm(emptyForm())
+  }
+  const startEdit = (t: Transaction) => {
+    setEditingId(t.id)
+    setFocusFund(t.code)
+    setForm({
+      fund_code: t.code,
+      type: t.type,
+      quantity: t.quantity,
+      price: t.price,
+      trade_date: t.trade_date,
+      fee: t.fee,
+    })
+    scrollToForm()
   }
 
   const addM = useMutation({
@@ -99,7 +134,22 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
         fee: form.fee || 0,
       }),
     onSuccess: () => {
-      setForm((f) => ({ ...emptyForm(), fund_code: f.fund_code }))
+      setForm({ ...emptyForm(), fund_code: focusFund ?? '' })
+      invalidate()
+    },
+  })
+  const updateM = useMutation({
+    mutationFn: () =>
+      updateTransaction(pid as number, editingId as number, {
+        type: form.type,
+        quantity: form.quantity,
+        price: form.price || undefined,
+        trade_date: form.trade_date,
+        fee: form.fee ?? 0,
+      }),
+    onSuccess: () => {
+      setEditingId(null)
+      setForm({ ...emptyForm(), fund_code: focusFund ?? '' })
       invalidate()
     },
   })
@@ -110,9 +160,14 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
 
   const submitTx = (e: FormEvent) => {
     e.preventDefault()
-    if (pid == null || !form.fund_code.trim() || form.quantity <= 0) return
-    addM.mutate()
+    if (pid == null || form.quantity <= 0) return
+    if (editingId != null) updateM.mutate()
+    else if (form.fund_code.trim()) addM.mutate()
   }
+
+  const shownTx = focusFund
+    ? (txQ.data ?? []).filter((t) => t.code === focusFund)
+    : txQ.data ?? []
 
   return (
     <div className="stack">
@@ -149,13 +204,29 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
 
       {pid != null && <PortfolioPerformance pid={pid} />}
 
-      <div className="card ac-green">
-        <h2>İşlem Ekle</h2>
+      <div className="card ac-green" ref={formRef}>
+        <div className="perf-head">
+          <h2>{editingId != null ? 'İşlem Düzenle' : 'İşlem Ekle'}</h2>
+          {focusFund && (
+            <span className="tx-focus">
+              <b>{focusFund}</b>
+              <button
+                type="button"
+                className="btn-icon"
+                title="Fon seçimini kaldır"
+                onClick={clearFocus}
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
         <form className="tx-form" onSubmit={submitTx}>
           <input
             className="input"
             placeholder="Fon kodu"
             value={form.fund_code}
+            disabled={focusFund != null || editingId != null}
             onChange={(e) => setForm({ ...form, fund_code: e.target.value })}
           />
           <select
@@ -190,11 +261,18 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
               setForm({ ...form, price: e.target.value ? Number(e.target.value) : undefined })
             }
           />
-          <button className="btn" type="submit" disabled={addM.isPending}>
-            Ekle
+          <button className="btn" type="submit" disabled={addM.isPending || updateM.isPending}>
+            {editingId != null ? 'Güncelle' : 'Ekle'}
           </button>
+          {editingId != null && (
+            <button type="button" className="btn btn-ghost" onClick={clearFocus}>
+              Vazgeç
+            </button>
+          )}
         </form>
-        {addM.isError && <p className="error">İşlem eklenemedi (fon kodu/tarih kontrol edin).</p>}
+        {(addM.isError || updateM.isError) && (
+          <p className="error">İşlem kaydedilemedi (fon kodu/tarih/fiyat kontrol edin).</p>
+        )}
       </div>
 
       <div className="card ac-teal">
@@ -217,7 +295,14 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
                 {summaryQ.data.positions.map((p) => (
                   <tr key={p.code}>
                     <td>
-                      <b>{p.code}</b>
+                      <button
+                        type="button"
+                        className="link-code"
+                        title="Fona gir — işlemleri yönet"
+                        onClick={() => openFund(p.code)}
+                      >
+                        {p.code}
+                      </button>
                       <div className="muted small">{p.title}</div>
                     </td>
                     <td className="r">{num(p.units, 2)}</td>
@@ -239,8 +324,18 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
       </div>
 
       <div className="card ac-slate">
-        <h2>İşlemler</h2>
-        {txQ.data && txQ.data.length > 0 ? (
+        <div className="perf-head">
+          <h2>İşlemler</h2>
+          {focusFund && (
+            <span className="muted small">
+              Yalnızca <b>{focusFund}</b> ·{' '}
+              <button type="button" className="btn-ghost-sm" onClick={clearFocus}>
+                tümünü göster
+              </button>
+            </span>
+          )}
+        </div>
+        {shownTx.length > 0 ? (
           <div className="table-wrap">
             <table>
               <thead>
@@ -250,12 +345,12 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
                   <th>Tip</th>
                   <th className="r">Adet</th>
                   <th className="r">Fiyat</th>
-                  <th></th>
+                  <th className="r"></th>
                 </tr>
               </thead>
               <tbody>
-                {txQ.data.map((t) => (
-                  <tr key={t.id}>
+                {shownTx.map((t) => (
+                  <tr key={t.id} className={editingId === t.id ? 'row-editing' : ''}>
                     <td>{t.trade_date}</td>
                     <td>{t.code}</td>
                     <td>
@@ -265,7 +360,10 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
                     </td>
                     <td className="r">{num(t.quantity, 2)}</td>
                     <td className="r">{num(t.price, 4)}</td>
-                    <td className="r">
+                    <td className="r tx-actions">
+                      <button className="btn-icon" title="Düzenle" onClick={() => startEdit(t)}>
+                        ✎
+                      </button>
                       <button
                         className="btn-icon"
                         title="Sil"
@@ -281,7 +379,7 @@ export default function PortfolioPanel({ prefillCode }: { prefillCode?: string }
             </table>
           </div>
         ) : (
-          <p className="muted">İşlem yok.</p>
+          <p className="muted">{focusFund ? `${focusFund} için işlem yok.` : 'İşlem yok.'}</p>
         )}
       </div>
 

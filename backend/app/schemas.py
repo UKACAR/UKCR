@@ -170,6 +170,16 @@ class TransactionCreate(BaseModel):
     note: str | None = None
 
 
+class TransactionUpdate(BaseModel):
+    """İşlem düzenleme (kısmi). Fon değiştirilemez; hatalıysa sil-ekle."""
+    type: str | None = Field(default=None, pattern="^(BUY|SELL)$")
+    quantity: float | None = Field(default=None, gt=0)
+    price: float | None = Field(default=None, gt=0)
+    trade_date: date | None = None
+    fee: float | None = Field(default=None, ge=0)
+    note: str | None = None
+
+
 class TransactionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

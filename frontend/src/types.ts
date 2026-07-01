@@ -209,6 +209,15 @@ export interface TransactionCreate {
   note?: string | null
 }
 
+export interface TransactionUpdate {
+  type?: 'BUY' | 'SELL'
+  quantity?: number
+  price?: number | null
+  trade_date?: string
+  fee?: number
+  note?: string | null
+}
+
 export interface Position {
   code: string
   title: string

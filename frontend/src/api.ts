@@ -22,6 +22,7 @@ import type {
   Summary,
   Transaction,
   TransactionCreate,
+  TransactionUpdate,
   ValorUpdate,
 } from './types'
 
@@ -58,6 +59,9 @@ export const listTransactions = (pid: number) =>
 
 export const addTransaction = (pid: number, body: TransactionCreate) =>
   http.post<Transaction>(`/portfolios/${pid}/transactions`, body).then((r) => r.data)
+
+export const updateTransaction = (pid: number, txId: number, body: TransactionUpdate) =>
+  http.patch<Transaction>(`/portfolios/${pid}/transactions/${txId}`, body).then((r) => r.data)
 
 export const deleteTransaction = (pid: number, txId: number) =>
   http.delete(`/portfolios/${pid}/transactions/${txId}`).then((r) => r.data)

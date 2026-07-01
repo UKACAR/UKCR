@@ -20,6 +20,7 @@ from app.schemas import (
     SummaryOut,
     TransactionCreate,
     TransactionOut,
+    TransactionUpdate,
 )
 from app.services import csvio
 from app.services.performance import portfolio_performance
@@ -105,6 +106,36 @@ def add_transaction(
         note=body.note,
     )
     db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    return tx
+
+
+@router.patch("/{portfolio_id}/transactions/{tx_id}", response_model=TransactionOut)
+def update_transaction(
+    portfolio_id: int,
+    tx_id: int,
+    body: TransactionUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    p = _owned_portfolio(db, user, portfolio_id)
+    tx = db.get(Transaction, tx_id)
+    if tx is None or tx.portfolio_id != p.id:
+        raise HTTPException(status_code=404, detail="İşlem bulunamadı")
+    data = body.model_dump(exclude_unset=True)
+    if "type" in data and data["type"]:
+        tx.type = data["type"]
+    if "quantity" in data and data["quantity"] is not None:
+        tx.quantity = Decimal(str(data["quantity"]))
+    if "price" in data and data["price"] is not None:
+        tx.price = Decimal(str(data["price"]))
+    if "trade_date" in data and data["trade_date"] is not None:
+        tx.trade_date = data["trade_date"]
+    if "fee" in data and data["fee"] is not None:
+        tx.fee = Decimal(str(data["fee"]))
+    if "note" in data:
+        tx.note = data["note"]
     db.commit()
     db.refresh(tx)
     return tx
